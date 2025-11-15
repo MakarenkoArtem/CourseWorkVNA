@@ -1,10 +1,12 @@
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 import psutil
 import socket
 import time
+from fastapi.middleware.cors import CORSMiddleware
+
 
 def get_local_ip():
     # создаём UDP-сокет и "подключаемся" к внешнему адресу
@@ -23,9 +25,18 @@ def get_local_ip():
 print("Мой локальный IP:", get_local_ip())
 
 app = FastAPI()
-templates = Jinja2Templates(directory=".")
-app.mount("/js", StaticFiles(directory="js"), name="js")
 
+# Разрешаем запросы с любых источников
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # или ["http://localhost:5173"] для конкретного фронтенда
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+templates = Jinja2Templates(directory="react-app")
+app.mount("/react-app", StaticFiles(directory="react-app"), name="react-app")
+'''
 @app.get("/api/time")
 def read_root():
     return {"value":time.time()%60}
@@ -33,8 +44,23 @@ def read_root():
 @app.get("/api/cpu")
 def read_root():
     return {"value": psutil.cpu_percent(interval=1)}
+'''
+@app.get("/settings", response_class=HTMLResponse)
+def home(request: Request):
+    return templates.TemplateResponse("settingsPage.html", {"request": request})
 
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse("mainPage.html", {"request": request})
+    return FileResponse("react-app/mainPage.html",
+                        headers={
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0",
+        })
 
+@app.get("/api/websocket")
+def read_root():
+    return {"host": "127.0.0.1", "port": 8765, "protocol":"websocket"}
+
+#uvicorn server:app --port 8000

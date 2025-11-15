@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <title>Настройки VNA</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial; padding: 20px; }
+    .row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+    label { min-width: 120px; }
+    input[type="number"] { width: 120px; padding: 6px 8px; }
+    .error { color: #a00; font-size: 0.9rem; }
+    .result { margin-top: 16px; padding: 8px; background:#f4f4f4; border-radius:6px; }
+    button { padding: 8px 12px; }
+  </style>
+</head>
+<body>
+
+  <h1>Настройки ВАЦ</h1>
+
+  <form id="numsForm" novalidate>
+    <div class="row">
+      <label for="a">Минимальная частота</label>
+      <input id="a" name="a" type="number" min="0" step="1" inputmode="numeric" required aria-describedby="errA">
+      <div id="errA" class="error" role="alert" aria-live="polite"></div>
+    </div>
+
+    <div class="row">
+      <label for="b">Максимальная частота</label>
+      <input id="b" name="b" type="number" min="0" step="1" inputmode="numeric" required aria-describedby="errB">
+      <div id="errB" class="error" role="alert" aria-live="polite"></div>
+    </div>
+
+    <div class="row">
+      <label for="c">Кол-во точек</label>
+      <input id="c" name="c" type="number" min="0" step="1" inputmode="numeric" required aria-describedby="errC">
+      <div id="errC" class="error" role="alert" aria-live="polite"></div>
+    </div>
+
+    <div class="row">
+      <button type="submit">Отправить</button>
+      <button type="button" id="clearBtn">Сброс</button>
+    </div>
+  </form>
+
+  <div id="out" class="result" aria-live="polite" hidden></div>
+
+    <script type="module" src="/react-app/src/settingsPage/main.js"></script>
+  </script>
+</body>
+</html>
