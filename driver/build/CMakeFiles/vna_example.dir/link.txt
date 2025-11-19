@@ -1,0 +1,1 @@
+/usr/bin/c++ CMakeFiles/vna_example.dir/main.cpp.o CMakeFiles/vna_example.dir/VNAKitDevice.cpp.o -o vna_example  -Wl,-rpath,"\$ORIGIN:/home/artem/Downloads/course" /home/artem/Downloads/course/libVNAKit.so 
