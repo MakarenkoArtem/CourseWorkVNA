@@ -15,11 +15,11 @@ if __name__ == '__main__':
 
     # Применение настроек
     vnaSettings = vnakit.RecordingSettings(
-        vnakit.FrequencyRange(4125.0, 6000.0, 51),  # 51 точка, от 4125 до 6000 МГц
-        140.0,  # Полоса пропускания (RBW) в КГц
-        -24.0,  # Выходная мощность (дБм)
+        vnakit.FrequencyRange(500.0, 6000.0, 51),  # 51 точка, от 4125 до 6000 МГц
+        1.0,  # Полоса пропускания (RBW) в КГц
+        -10.0,  # Выходная мощность (дБм)
         6,  # txtr — от 1 до 6
-        vnakit.VNAKIT_MODE_ONE_PORT #VNAKIT_MODE_TWO_PORTS  # Режим двухпортного измерения
+        vnakit.VNAKIT_MODE_TWO_PORTS #VNAKIT_MODE_TWO_PORTS  # Режим двухпортного измерения
     )
 
     vnakit.ApplySettings(vnaSettings)
@@ -40,14 +40,17 @@ if __name__ == '__main__':
         vnakit.Record()
 
     actual_freqs = vnakit.GetFreqVector_MHz()
-    print("FREQUENCIES:")
-    print(actual_freqs)
-    print("------")
-    with open("open.csv", "w") as file:
+    with open("3db6.csv", "w") as file:
         recording = vnakit.GetRecordingResult()
+        print(recording)
         res = [recording[4][i]/recording[5][i] for i in range(len(recording[1]))]
-        for txtr in [1, 2, 3, 4, 5, 6]:
-            file.write(str(txtr) + ": " + str(recording[txtr]))
+        #file.write(' '.join(map(str, actual_freqs)))
+        #print(' '.join(map(str, actual_freqs)))
+        for i in range(len(actual_freqs)):
+            file.write(str(actual_freqs[i]).ljust(5, ' '))
+            for txtr in [1, 2, 3, 4, 5, 6]:
+                file.write(str(recording[txtr][i].real).rjust(25, ' '))
+                file.write(str(recording[txtr][i].imag).rjust(25, ' '))
             file.write("\n")
         file.write(" ".join([str(i) for i in res]))
         file.write("\n")
