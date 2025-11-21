@@ -36,6 +36,8 @@ app.add_middleware(
 )
 templates = Jinja2Templates(directory="react-app")
 app.mount("/react-app", StaticFiles(directory="react-app"), name="react-app")
+app.mount("/react-app/lib", StaticFiles(directory="react-app/lib"), name="lib")
+
 '''
 @app.get("/api/time")
 def read_root():
