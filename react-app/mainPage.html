@@ -11,34 +11,42 @@
     <script src="/lib/react.development.js"></script>
     <script src="/lib/react-dom.development.js"></script>
     <script src="/lib/babel.min.js"></script>
-    <link href="/lib/bootstrap-5.3.8-dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" >
-    <script src="/lib/bootstrap-5.3.8-dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" ></script>
+    <link href="/lib/bootstrap-5.3.8-dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB">
+    <script src="/lib/bootstrap-5.3.8-dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"></script>
     <script src="/lib/plotly-3.3.0.min.js"></script>
 </head>
 <body>
-    <table class="table table-bordered table-striped">
-        <thead>
-        </thead>
-        <tbody>
-        <tr style="width:100%;height:50%;">
-            <td style="width:50%;">
-                <div id="S11" data-role="graph" ></div>
-            </td>
-            <td style="width:50%;">
-                <div id="S12" data-role="graph" ></div>
-            </td>
-        </tr>
-        <tr style="width:100%;height:50%;">
-            <td style="width:50%;">
-                <div id="S21" data-role="graph" ></div>
-            </td>
-            <td style="width:50%;">
-                <div id="S22" data-role="graph" ></div>
+<nav class="navbar navbar-dark bg-primary">
+    <button class="btn btn-primary">
+        <img id="settingsIcon" src="/src/control.png" alt="Settings" style="width: 40px; height: 40px; margin-right: 5px;">
+        00:00
+    </button>
+</nav>
+<table class="table table-bordered table-striped">
+    <thead>
+    </thead>
+    <tbody>
+    <tr style="width:100%;height:50%;">
+        <td style="width:50%;padding:0px">
+            <div id="S11" data-role="graph"></div>
+        </td>
+        <td style="width:50%;padding:0px">
+            <div id="S12" data-role="graph"></div>
+        </td>
+    </tr>
+    <tr style="width:100%;height:50%;">
+        <td style="width:50%;padding:0px">
+            <div id="S21" data-role="graph"></div>
+        </td>
+        <td style="width:50%;padding:0px">
+            <div id="S22" data-role="graph"></div>
 
-            </td>
-        </tr>
-        </tbody>
-    </table>
-    <script type="module" src="/src/main.js"></script>
+        </td>
+    </tr>
+    </tbody>
+</table>
+<script type="module" src="/src/main.js"></script>
 </body>
 </html>

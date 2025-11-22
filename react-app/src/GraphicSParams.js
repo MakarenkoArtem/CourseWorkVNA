@@ -12,20 +12,6 @@ export class GraphicSParams{
         }
         this.graphics=sGraphics;
         console.log(this.graphics);
-        /*for(let i=0;i<2;++i){
-            for(let j=0;j<2;++j){
-                Plotly.newPlot(this.graphics[i][j].divId, [{
-                    y: Array(200).fill(0),
-                    mode: "lines",
-                    line: {color: "lime"}
-                }], {
-                    title: this.graphics[i][j].title,
-                },{responsive: true});
-                console.log(1);
-                this.changeScale(sGraphics[i][j]);
-                console.log(2);
-            }
-        }*/
         this.initPlots();
     }
      async initPlots() {
@@ -39,7 +25,7 @@ export class GraphicSParams{
                 await Plotly.newPlot(g.divId, [{
                     y: Array(200).fill(0),
                     mode: "lines",
-                    line: { color: "lime" }
+                    line: { color: "blue" }
                 }], {
                     title: g.title,
                 }, { responsive: true });

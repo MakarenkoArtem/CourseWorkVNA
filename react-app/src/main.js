@@ -29,6 +29,7 @@ let timeOut = 100;
 let websocketHost = null;
 let websocketPort = null;
 let client = null;
+let CURRENT_USER = 5;
 const settings = new SettingsVNA();
 async function loop() {
     let graphics = new GraphicSParams([
@@ -44,6 +45,11 @@ async function loop() {
 
                 client = await WSClient.create(`ws://${websocketHost}:${websocketPort}`, settings);
                 timeOut = 100;
+                if(CURRENT_USER){
+                    document.getElementById("settingsIcon").src = "/src/control.png"
+                }else{
+                    document.getElementById("settingsIcon").src = "/src/disconnect.png"
+                }
             }
 
             console.debug("Update settings: ", settings.update(await client.getSettings()))

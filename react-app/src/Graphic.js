@@ -9,20 +9,34 @@ export class Graphic{
         if (!(graphData instanceof GraphData)) {
             throw new TypeError("Ожидается GraphData");
         }
-
-        Plotly.newPlot(graphData.divId, graphData.data, {});
+        // задаём layout
+        const layout = {
+            margin: { l: 0, r: 0, t: 0, b: 0 }, // левый, правый, верхний, нижний
+            autosize: true,                           // авто размер
+            // optional: чтобы график растягивался на всю ширину/высоту div
+            width: document.getElementById(graphData.divId).clientWidth,
+            height: document.getElementById(graphData.divId).clientHeight
+        };
+        const data = [{
+            y: graphData.data, // Используем массив y
+            mode: "lines",
+            line: { color: 'orange' },
+            type: 'scatter'
+        }];
+        Plotly.newPlot(graphData.divId, data, layout);
         changeScale(graphData);
     }
     changeScale(graphData){
         if (!(graphData instanceof GraphData)) {
             throw new TypeError("Ожидается GraphData");
         }
-
         var layout = {
             x: range(graphData.start, graphData.finish, (graphData.finish-graphData.start)/graphData.data.lenght),
             y: {range: [graphData.bottom, graphData.top]},
-            type: 'scatter'
+            type: 'scatter',
+  line: {color: 'blue'}}
         };
+
         Plotly.relayout(graphData.divId, layout);
     }
 }
@@ -31,7 +45,8 @@ export class Graphic{
 var trace1 = {
   x: {range: [0, graph.data.lenght()]},
   y: [4, 5, 6],
-  type: 'scatter'
+  type: 'scatter',
+  line: {color: 'red'}
 };
 
 

@@ -22,6 +22,7 @@ def get_local_ip():
         s.close()
     return ip
 
+
 print("Мой локальный IP:", get_local_ip())
 
 app = FastAPI()
@@ -37,31 +38,25 @@ app.add_middleware(
 templates = Jinja2Templates(directory="react-app")
 app.mount("/src", StaticFiles(directory="react-app/src"), name="src")
 app.mount("/lib", StaticFiles(directory="react-app/lib"), name="lib")
-'''
-@app.get("/api/time")
-def read_root():
-    return {"value":time.time()%60}
 
-@app.get("/api/cpu")
-def read_root():
-    return {"value": psutil.cpu_percent(interval=1)}
-'''
+
 @app.get("/settings", response_class=HTMLResponse)
-def home(request: Request):
+def settings(request: Request):
     return templates.TemplateResponse("settingsPage.html", {"request": request})
+
 
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request):
     return templates.TemplateResponse("mainPage.html", {"request": request})
-    return FileResponse("react-app/mainPage.html",
-                        headers={
-            "Cache-Control": "no-cache, no-store, must-revalidate",
-            "Pragma": "no-cache",
-            "Expires": "0",
-        })
+
+CURRENT_USER=5
+@app.get("/currentUser", response_class=HTMLResponse)
+def curUser(request: Request):
+    return CURRENT_USER
+
 
 @app.get("/api/websocket")
 def read_root():
-    return {"host": "127.0.0.1", "port": 8765, "protocol":"websocket"}
+    return {"host": "127.0.0.1", "port": 8765, "protocol": "websocket"}
 
-#uvicorn server:app --port 8000
+# uvicorn server:app --port 8000
