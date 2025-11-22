@@ -32,7 +32,7 @@ let client = null;
 const settings = new SettingsVNA();
 async function loop() {
     let graphics = new GraphicSParams([
-        [new GraphData("cpu", "S11", websocketHost,websocketPort, settings),
+        [new GraphData("S11", "S11", websocketHost,websocketPort, settings),
         new GraphData("S12", "S12", websocketHost,websocketPort, settings)],
         [new GraphData("S21", "S21", websocketHost,websocketPort, settings),
         new GraphData("S22", "S22", websocketHost,websocketPort, settings)]]);
