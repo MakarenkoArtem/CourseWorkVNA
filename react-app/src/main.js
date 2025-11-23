@@ -1,34 +1,19 @@
-//import React from 'react'
-//import * as ReactDOMClient from 'react-dom/client'
-//import './index.css'
 import {checkWSClient, getWSClient, getSParamWS, WSClient} from './wsClient.js'
 import {GraphicSParams} from './GraphicSParams.js'
 import {GraphData} from './GraphData.js'
 import {WSResponse} from './WSResponse.js'
 import {SettingsVNA} from './SettingsVNA.js'
+import {getWSAddress, getCurrentTime} from './getWSAddress.js'
 
 function sleep(ms){
     return new Promise(resolve=>setTimeout(resolve, ms));
-}
-
-async function getAddress(address, websocketHost, websocketPort) {
-    if (websocketHost!=null && websocketPort!=null){return [websocketHost, websocketPort];}
-    const response = await fetch(address, {method: "GET"})
-
-    if(response.ok){
-        const data = await response.json();
-        if (typeof data.host === 'string' && typeof data.port === 'number') {
-            return [data.host, data.port];
-        }
-        throw new Error(`Data is not correct`)
-        }
-    throw new Error(`HTTP error ${response.status}`);
 }
 
 let timeOut = 100;
 let websocketHost = null;
 let websocketPort = null;
 let client = null;
+let CURRENT_USER = 5;
 const settings = new SettingsVNA();
 async function loop() {
     let graphics = new GraphicSParams([
@@ -40,10 +25,22 @@ async function loop() {
         try{
             if(checkWSClient(client) == null){
                 [websocketHost, websocketPort] =
-                await getAddress(`http://${location.hostname}:8000/api/websocket`, websocketHost, websocketPort);
+                await getWSAddress(`http://${location.hostname}:8000/api/websocket`, websocketHost, websocketPort);
 
                 client = await WSClient.create(`ws://${websocketHost}:${websocketPort}`, settings);
                 timeOut = 100;
+                let time = await getCurrentTime(`http://${location.hostname}:8000/api/time_user/${CURRENT_USER}`, websocketHost, websocketPort);
+                console.log("TIME:", time)
+                let btn = document.getElementById("btn-settings")
+                if(time>-1){
+                    document.getElementById("settingsIcon").src = "/src/control.png"
+                    document.getElementById("btn-settings-text").textContent = `${Math.floor(time/60)}:${time%60}`
+                    btn.onclick = () => window.location.href = "/settings";
+                }else{
+                    document.getElementById("settingsIcon").src = "/src/disconnect.png"
+                    document.getElementById("btn-settings-text").textContent = 'Управление у другого пользователя'
+                    btn.onclick = () => null;
+                }
             }
 
             console.debug("Update settings: ", settings.update(await client.getSettings()))
