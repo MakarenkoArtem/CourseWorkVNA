@@ -2,9 +2,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
-import psutil
 import socket
-import time
 from fastapi.middleware.cors import CORSMiddleware
 
 
@@ -49,10 +47,16 @@ def settings(request: Request):
 def home(request: Request):
     return templates.TemplateResponse("mainPage.html", {"request": request})
 
-CURRENT_USER=5
-@app.get("/currentUser", response_class=HTMLResponse)
-def curUser(request: Request):
-    return CURRENT_USER
+
+CURRENT_USER = 5
+remaining_time = 150
+
+
+@app.get("/api/time_user/{id}")
+def curUser(id: int, request: Request):
+    if id == CURRENT_USER:
+        return {"remainingTime":remaining_time}
+    return {"remainingTime":-1}
 
 
 @app.get("/api/websocket")
