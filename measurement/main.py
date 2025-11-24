@@ -15,11 +15,11 @@ if __name__ == '__main__':
 
     # Применение настроек
     vnaSettings = vnakit.RecordingSettings(
-        vnakit.FrequencyRange(500.0, 6000.0, 51),  # 51 точка, от 4125 до 6000 МГц
-        1.0,  # Полоса пропускания (RBW) в КГц
+        vnakit.FrequencyRange(500.0, 6000.0, 1001),  # 51 точка, от 4125 до 6000 МГц
+        2.0,  # Полоса пропускания (RBW) в КГц
         -10.0,  # Выходная мощность (дБм)
-        6,  # txtr — от 1 до 6
-        vnakit.VNAKIT_MODE_TWO_PORTS #VNAKIT_MODE_TWO_PORTS  # Режим двухпортного измерения
+        3,  # txtr — от 1 до 6
+        vnakit.VNAKIT_MODE_ONE_PORT #VNAKIT_MODE_TWO_PORTS  # Режим двухпортного измерения
     )
 
     vnakit.ApplySettings(vnaSettings)
@@ -31,7 +31,7 @@ if __name__ == '__main__':
     #vnakit.WriteRecording(args.OUTPUT_DIR, vnakit.VNAKIT_OUTFORMAT_MAT)  # запись в MAT файл
 
     # Изменение настроек
-    vnaSettings.txtr = 6
+    vnaSettings.txtr = 3
     vnaSettings.mode = vnakit.VNAKIT_MODE_ONE_PORT
     vnakit.ApplySettings(vnaSettings)
 
@@ -40,10 +40,10 @@ if __name__ == '__main__':
         vnakit.Record()
 
     actual_freqs = vnakit.GetFreqVector_MHz()
-    with open("3db6.csv", "w") as file:
+    with open("test3.csv", "w") as file:
         recording = vnakit.GetRecordingResult()
         print(recording)
-        res = [recording[4][i]/recording[5][i] for i in range(len(recording[1]))]
+        res = [recording[1][i]/recording[2][i] for i in range(len(recording[1]))]
         #file.write(' '.join(map(str, actual_freqs)))
         #print(' '.join(map(str, actual_freqs)))
         for i in range(len(actual_freqs)):
@@ -52,7 +52,7 @@ if __name__ == '__main__':
                 file.write(str(recording[txtr][i].real).rjust(25, ' '))
                 file.write(str(recording[txtr][i].imag).rjust(25, ' '))
             file.write("\n")
-        file.write(" ".join([str(i) for i in res]))
-        file.write("\n")
-        file.write(" ".join([str(abs(i)) for i in res]))
-        file.write("\n")
+        #file.write(" ".join([str(i) for i in res]))
+        #file.write("\n")
+        #file.write(" ".join([str(abs(i)) for i in res]))
+        #file.write("\n")

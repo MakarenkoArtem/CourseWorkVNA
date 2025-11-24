@@ -1,0 +1,3 @@
+/home/artem/Downloads/course/build/CMakeFiles/vna_example.dir
+/home/artem/Downloads/course/build/CMakeFiles/edit_cache.dir
+/home/artem/Downloads/course/build/CMakeFiles/rebuild_cache.dir
