@@ -19,10 +19,25 @@
 </head>
 <body>
 <nav class="navbar navbar-dark bg-primary">
-    <button id="btn-settings" class="btn btn-primary">
+    <button id="btn-settings" style="margin-left:15px" class="btn btn-primary">
         <img id="settingsIcon" src="/src/control.png" alt="Settings" style="width: 40px; height: 40px; margin-right: 5px;">
         <span id="btn-settings-text">00:00</span>
     </button>
+    <div class="dropdown" style="margin-right:15px">
+    <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown"
+            aria-expanded="false">
+        <img src="/src/icon.png" align="right" alt="" class="round">
+    </button>
+    <ul class="dropdown-menu dropdown-menu-right">
+        <li class="dropdown-header"><h4 class="mainText">{{ name }}</h4>
+            Настройка пользователя
+        </li>
+        <li><a class="dropdown-item" href="/">Выйти</a></li>
+        <li class="divider"></li>
+        <li class="dropdown-header">Уроки</li>
+        <li><a class="dropdown-item" href="/weblearn">Посмотреть уроки</a></li>
+    </ul>
+</div>
 </nav>
 <table class="table table-bordered table-striped">
     <thead>
