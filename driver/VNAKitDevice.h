@@ -1,8 +1,8 @@
 #ifndef VNAKITDEVICE_H
 #define VNAKITDEVICE_H
 
+#include <iostream>
 #include "VNAKit.h"
-#include "TreadSafeQueue.h"
 #include <vector>
 #include <string>
 #include <stdexcept>
@@ -19,21 +19,23 @@ struct Measurement{
 };
 
 class VNAKitDevice {
-     VNAKit_RecordingSettings settings;
-     std::shared_ptr<ThreadSafeQueue<Measurement>> queue_;
+    VNAKit_RecordingSettings settings;
 public:
-    VNAKitDevice();
-    ~VNAKitDevice();
+    explicit VNAKitDevice(const std::string& path);
+    ~VNAKitDevice() = default;
+    void init();
+    void shutdown();
     void setConfigFile(const std::string& path);
     void applySettings();
+    void validateSettings();
     VNAKit_RecordingSettings& getSettings();
     void setSettings(const VNAKit_RecordingSettings s);
     std::vector<double> getFrequencyVectorMHz();
     Measurement getResult();
     VNAKit_FrequencyLimits frequencyLimits() const;
     VNAKit_PowerLimits powerLimits() const;
-    static std::string lastError();
-    void setQueue(std::shared_ptr<ThreadSafeQueue<Measurement>> q);
+    static std::string lastError(VNAKIT_RESULT result);
+
 private:
     void check(VNAKIT_RESULT result, const std::string& where);
     void record();

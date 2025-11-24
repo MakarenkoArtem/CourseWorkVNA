@@ -1,30 +1,35 @@
-// main.cpp
 #include "VNAKitDevice.h"
 #include <iostream>
-#include <thread>
-#include <memory>
 
 int main() {
     try {
-        // Создание экземпляра устройства
-        VNAKitDevice vna;
-        // Получение текущих настроек
-            VNAKit_RecordingSettings settings{};
-    settings.freqRange.freqStartMHz = 4125.0;
-    settings.freqRange.freqStopMHz = 6000.0;
-    settings.freqRange.numFreqPoints = 51;
-    settings.rbw_khz = 140.0;
-    settings.outputPower_dbm = -24.0;
-    settings.txtr = 6;
-    settings.mode = VNAKIT_MODE_ONE_PORT;
+        VNAKitDevice vna("./vnakit.conf");
 
+        vna.init();
+
+        auto settings = vna.getSettings();
+
+        // Настройка диапазона частот (в МГц)
+        settings.freqRange.freqStartMHz = 500.0;   // Начальная частота
+        settings.freqRange.freqStopMHz = 1000.0;   // Конечная частота
+        settings.freqRange.numFreqPoints = 1001;          // Количество точек
+        settings.rbw_khz = 2;
+        settings.outputPower_dbm = -10.0;
+
+        // Режим измерения: 0 — одиночный, 1 — дифференциальный (если поддерживается)
+        settings.mode = VNAKIT_MODE_TWO_PORTS;
+
+        // TXTR: 3 или 6 — зависит от конфигурации портов (см. документацию VNAKit)
+        settings.txtr = 3;
 
         // Применение настроек
         vna.setSettings(settings);
+        vna.validateSettings();
         vna.applySettings();
 
         // Выполнение измерения
         Measurement result = vna.getResult();
+
 
         // Вывод информации
         std::cout << "Измерение выполнено:\n";
@@ -47,6 +52,5 @@ int main() {
         std::cerr << "Ошибка: " << e.what() << std::endl;
         return 1;
     }
-
     return 0;
 }

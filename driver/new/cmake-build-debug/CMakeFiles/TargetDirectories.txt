@@ -1,3 +1,0 @@
-/home/artem/CLionProjects/untitled1/cmake-build-debug/CMakeFiles/vna_example.dir
-/home/artem/CLionProjects/untitled1/cmake-build-debug/CMakeFiles/edit_cache.dir
-/home/artem/CLionProjects/untitled1/cmake-build-debug/CMakeFiles/rebuild_cache.dir
