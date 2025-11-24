@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Cookie
 from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
@@ -55,8 +55,33 @@ remaining_time = 150
 @app.get("/api/time_user/{id}")
 def curUser(id: int, request: Request):
     if id == CURRENT_USER:
-        return {"remainingTime":remaining_time}
-    return {"remainingTime":-1}
+        return {"remainingTime": remaining_time}
+    return {"remainingTime": -1}
+
+
+@app.get("/api/userSettings/{id}")
+def userSettings(id: int, request: Request):
+    # TODO: возращает настройки пользователя
+    pass
+
+
+@app.put("/api/userSettings/{id}")
+def userSettings(id: int, request: Request):
+    settings = request.json()
+    # TODO: обновляет настройки пользователя
+    pass
+
+
+@app.get("/api/currentSettings")
+def currentSettings(request: Request):
+    # TODO: возращает настройки с векторника
+    pass
+
+
+@app.get("/api/activeUser")
+def activeUser(request: Request):
+    # TODO: возращает id и имя пользователя который занял векторник
+    return {"userId": -1, "nameUser": None}
 
 
 @app.get("/api/websocket")
