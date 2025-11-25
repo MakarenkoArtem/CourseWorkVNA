@@ -18,7 +18,7 @@ if __name__ == '__main__':
         vnakit.FrequencyRange(500.0, 6000.0, 1001),  # 51 точка, от 4125 до 6000 МГц
         2.0,  # Полоса пропускания (RBW) в КГц
         -10.0,  # Выходная мощность (дБм)
-        3,  # txtr — от 1 до 6
+        6,  # txtr — от 1 до 6
         vnakit.VNAKIT_MODE_ONE_PORT #VNAKIT_MODE_TWO_PORTS  # Режим двухпортного измерения
     )
 
@@ -31,7 +31,7 @@ if __name__ == '__main__':
     #vnakit.WriteRecording(args.OUTPUT_DIR, vnakit.VNAKIT_OUTFORMAT_MAT)  # запись в MAT файл
 
     # Изменение настроек
-    vnaSettings.txtr = 3
+    vnaSettings.txtr = 6
     vnaSettings.mode = vnakit.VNAKIT_MODE_ONE_PORT
     vnakit.ApplySettings(vnaSettings)
 
@@ -40,10 +40,10 @@ if __name__ == '__main__':
         vnakit.Record()
 
     actual_freqs = vnakit.GetFreqVector_MHz()
-    with open("test3.csv", "w") as file:
+    with open("2match6.csv", "w") as file:
         recording = vnakit.GetRecordingResult()
         print(recording)
-        res = [recording[1][i]/recording[2][i] for i in range(len(recording[1]))]
+        res = [recording[4][i]/recording[5][i] for i in range(len(recording[1]))]
         #file.write(' '.join(map(str, actual_freqs)))
         #print(' '.join(map(str, actual_freqs)))
         for i in range(len(actual_freqs)):

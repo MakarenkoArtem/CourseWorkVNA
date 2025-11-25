@@ -1,25 +1,27 @@
 #include "VNAKitDevice.h"
-#include <iostream>
-#include <algorithm>
 
 
-VNAKitDevice::VNAKitDevice() {
-    VNAKit_SetConfigFile("./vnakit.conf");
-
-    if (VNAKit_Init() != VNAKIT_RES_SUCCESS)
-        throw std::runtime_error("VNAKit_Init failed");
+VNAKitDevice::VNAKitDevice(const std::string& path) {
+	check(VNAKit_SetConfigFile(path.c_str()), "SetConfigFile");
 }
 
-VNAKitDevice::~VNAKitDevice() {
-    VNAKit_Shutdown();
+void VNAKitDevice::shutdown() {
+	check(VNAKit_Shutdown(), "VNAKit_Shutdown");
+}
+
+void VNAKitDevice::init(){
+	check(VNAKit_Init(), "VNAKit_Init");
 }
 
 void VNAKitDevice::setConfigFile(const std::string& path) {
     check(VNAKit_SetConfigFile(path.c_str()), "SetConfigFile");
 }
 
+void VNAKitDevice::validateSettings() {
+	check(VNAKit_ValidateSettings(settings), "VNAKit_VerifyConfig");
+}
+
 void VNAKitDevice::applySettings() {
-    check(VNAKit_ValidateSettings(settings), "ValidateSettings");
     check(VNAKit_ApplySettings(settings), "ApplySettings");
 }
 
@@ -44,13 +46,12 @@ std::vector<double> VNAKitDevice::getFrequencyVectorMHz() {
 }
 
 Measurement VNAKitDevice::getResult() {
+	record();
     Measurement measurement{};
-    int nFreqs = 0;
-    check(VNAKit_GetFreqVectorSizeDouble(&nFreqs), "GetFreqVectorSizeDouble");
     VNAKit_RecordingSettings currSettings = getSettings();
-    record();
+    auto nFreqs = currSettings.freqRange.numFreqPoints;
     VNAKit_RecordingResult result{};
-    check(VNAKit_InitResultStructure(&result, nFreqs), "InitResultStructure");
+    VNAKit_InitResultStructure(&result, nFreqs);
     check(VNAKit_GetRecordingResult(&result), "GetRecordingResult");
    	if (currSettings.txtr == 3){
     	measurement.a0.assign(result.resultBuffer[1], result.resultBuffer[1] + nFreqs);
@@ -67,7 +68,7 @@ Measurement VNAKitDevice::getResult() {
         	currSettings.txtr = 3;
     	setSettings(currSettings);
     	record();
-    	check(VNAKit_InitResultStructure(&result, nFreqs), "InitResultStructure");
+    	VNAKit_InitResultStructure(&result, nFreqs);
     	check(VNAKit_GetRecordingResult(&result), "GetRecordingResult");
    		if (currSettings.txtr == 3){
     		measurement.a0.assign(result.resultBuffer[1], result.resultBuffer[1] + nFreqs);
@@ -93,17 +94,17 @@ VNAKit_PowerLimits VNAKitDevice::powerLimits() const {
     return VNAKit_GetPowerLimits();
 }
 
-std::string VNAKitDevice::lastError() {
-    const char* err = VNAKit_GetLastErrString();
-    return err ? std::string(err) : "Unknown error";
+std::string VNAKitDevice::lastError(VNAKIT_RESULT result) {
+    std::string err = VNAKit_GetLastErrString();
+    if (err == "(none)"){
+        //<TODO написать switch c информацией по каждой ошибке>
+        err = std::to_string(result);
+    }
+    return err;
 }
 
 void VNAKitDevice::check(VNAKIT_RESULT result, const std::string& where) {
-    if (result != VNAKIT_RES_SUCCESS)
-        throw std::runtime_error("Error: " + where);
+    if (result != VNAKIT_RES_SUCCESS) {
+    	throw std::runtime_error(lastError(result) + " (in func " + where + ")");
+    }
 }
-
-void VNAKitDevice::setQueue(std::shared_ptr<ThreadSafeQueue<Measurement>> q) {
-	queue_ = std::move(q);
-}
-
