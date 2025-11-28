@@ -1,0 +1,12 @@
+flask
+sqlalchemy
+flask_wtf
+flask_restful
+flask_login
+sqlalchemy_serializer
+wtforms==2.3.3
+requests
+pillow
+fuzzywuzzy
+websocket
+flask_cors

@@ -1,11 +1,22 @@
-from flask import Flask, request, jsonify, send_from_directory, render_template
+from flask import Flask, request, jsonify, send_from_directory, render_template, redirect
 from flask_cors import CORS
+from flask_login import LoginManager, current_user, login_user, login_required, logout_user
+from forms.user import RegisterForm
+from data import db_session
+from data.users import User
+import datetime
 
 app = Flask(
     __name__,
-    template_folder="react-app",  # Jinja2 HTML
-    static_folder=None  # Статику подключаем вручную ниже
+    # template_folder="react-app",  # Jinja2 HTML
+    # static_folder=None  # Статику подключаем вручную ниже
 )
+app.config["SECRET_KEY"] = "your-secret-key"  # нужен для CSRF и сессий
+app.config["PERMANENT_SESSION_LIFETIME"] = datetime.timedelta(days=1)
+login_manager = LoginManager()
+login_manager.init_app(app)
+#задаёт страницу, на которую перенаправит неавторизованных пользователей при срабатывании @login_required
+login_manager.login_view = '/'
 
 CORS(app)  # как allow_origins=["*"] в FastAPI
 
@@ -25,10 +36,17 @@ def send_lib(path):
 
 @app.route("/")
 def home():
-    return render_template("mainPage.html")
+    name = ''
+    try:
+        id = current_user.id
+        name = current_user.email
+    except AttributeError:
+        id = 0
+    return render_template("mainPage.html", id=id, name=name)
 
 
 @app.route("/settings")
+@login_required
 def settings():
     return render_template("settingsPage.html")
 
@@ -76,9 +94,39 @@ def websocket_info():
     return jsonify({"host": "127.0.0.1", "port": 8765, "protocol": "websocket"})
 
 
-# ------------------------  ENTRY POINT  --------------------------
+@login_manager.user_loader
+def load_user(user_id):
+    db_sess = db_session.create_session()
+    return db_sess.get(User, user_id)
+
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():  # форма для регистрации
+    if current_user.is_authenticated:
+        redirect('/')
+    form = RegisterForm()
+    if form.validate_on_submit():
+        if not form.passIsCorrect():
+            return render_template('register.html', form=form, message="Пароли не совпадают", id=0)
+        db_sess = db_session.create_session()
+        if db_sess.query(User).filter(User.email == form.email.data).first():
+            return render_template('register.html', form=form, message="Такой пользователь уже есть", id=0)
+        user = User(email=form.email.data)
+        user.set_password(form.password.data)
+        db_sess.add(user)
+        db_sess.commit()
+        login_user(user, remember=True)
+        return redirect('/')
+    return render_template('register.html', title='Регистрация', form=form, id=0)
+
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    return redirect("/")
+
 
 if __name__ == "__main__":
-    host = "0.0.0.0"
-    print("Мой локальный IP:", host)
-    app.run(host, port=8000, debug=True)
+    db_session.global_init("db/VNAData.db")
+    app.run(host="0.0.0.0", port=8000, debug=True)
