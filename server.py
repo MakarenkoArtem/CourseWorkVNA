@@ -15,6 +15,8 @@ app.config["SECRET_KEY"] = "your-secret-key"  # нужен для CSRF и сес
 app.config["PERMANENT_SESSION_LIFETIME"] = datetime.timedelta(days=1)
 login_manager = LoginManager()
 login_manager.init_app(app)
+#задаёт страницу, на которую перенаправит неавторизованных пользователей при срабатывании @login_required
+login_manager.login_view = '/'
 
 CORS(app)  # как allow_origins=["*"] в FastAPI
 
@@ -44,6 +46,7 @@ def home():
 
 
 @app.route("/settings")
+@login_required
 def settings():
     return render_template("settingsPage.html")
 
