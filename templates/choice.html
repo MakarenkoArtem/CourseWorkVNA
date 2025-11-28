@@ -1,12 +1,13 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container welcome">
+<br>
+<div class="container welcome" style="max-width:500px;">
     <div class="shadow-lg p-3 mb-5 bg-body rounded">
         <h1 align="center">Добро пожаловать!</h1>
         <br>
-        <p class="center-img">
-            <img src="{{ url_for('static', filename='img/hello.gif') }}" class="round_gif" width="50%" height="50%">
+        <p align="center" class="center-img">
+            <img src="{{ url_for('static', filename='img/hello.gif') }}" class="round_gif" width="50%">
         </p>
         <br>
         <a href="/entry" style="position: relative; float: left; left: 6%;" class="btn btn-primary"><h2 style="margin:0%;">Вход</h2>
