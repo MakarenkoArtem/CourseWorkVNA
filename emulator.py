@@ -56,7 +56,7 @@ def generate_vna_data(settings: RecordingSettings) -> VNAData:
         b3_6=zero_vec.copy()
     )
 
-    time.sleep(40)
+    time.sleep(20)
 
     if settings.mode == 0:
         if settings.txtr == 3:

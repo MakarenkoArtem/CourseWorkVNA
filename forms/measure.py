@@ -14,7 +14,8 @@ class MeasureForm(FlaskForm):
     pointCnt = IntegerField("Число точек", validators=[DataRequired(), validate_freq])
     rbw = FloatField("RBW", validators=[DataRequired()])
     dbm = FloatField('dBm', validators=[DataRequired()])
-    txtr = IntegerField("txtr", validators=[DataRequired(), validate_freq])
+    txtr = SelectField("Тип измерений", choices=[
+        (3, '3'), (6, '6')], validators=[DataRequired()])
     mode = SelectField("Тип измерений", choices=[
         (0, '1 порт'), (1, '2 порта')], validators=[DataRequired()])
 

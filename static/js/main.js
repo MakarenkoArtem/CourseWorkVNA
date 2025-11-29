@@ -27,15 +27,18 @@ async function loop() {
                 [websocketHost, websocketPort] =
                 await getWSAddress(`http://${location.hostname}:8000/api/websocket`, websocketHost, websocketPort);
 
-                client = await WSClient.create(`ws://${websocketHost}:${websocketPort}`, settings);
                 timeOut = 100;
-                let time = await getCurrentTime(`http://${location.hostname}:8000/api/time_user/${CURRENT_USER}`, websocketHost, websocketPort);
+                let time = await getCurrentTime(`http://${location.hostname}:8000/api/time_user`, websocketHost, websocketPort);
                 console.log("TIME:", time)
                 try{
                     let btn = document.getElementById("btn-settings")
                     if(time>-1){
                         document.getElementById("settingsIcon").src = "/src/control.png"
-                        document.getElementById("btn-settings-text").textContent = `${Math.floor(time/60)}:${time%60}`
+                        let text='Устройсво доступно';
+                        if (time>0){
+                            text=`${Math.floor(time/60)}:${time%60}`
+                        }
+                        document.getElementById("btn-settings-text").textContent = text
                         btn.onclick = () => window.location.href = "/settings";
                     }else{
                         document.getElementById("settingsIcon").src = "/src/disconnect.png"
@@ -45,6 +48,8 @@ async function loop() {
                 }catch(error){
                     console.log(error)
                 }
+                client = await WSClient.create(`ws://${websocketHost}:${websocketPort}`, settings);
+
             }
 
             console.debug("Update settings: ", settings.update(await client.getSettings()))

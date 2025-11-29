@@ -14,6 +14,7 @@ from forms.measure import MeasureForm
 from forms.user import RegisterForm, EntryForm
 import emulator
 
+activeSession = None
 events = Queue()
 app = Flask(
     __name__,
@@ -71,6 +72,8 @@ def fillSettingsForm(form, settings):
 @app.route("/settings", methods=['GET', 'POST'])
 @login_required
 def settings():  # форма для регистрации
+    if cur_user().get_json()['remainingTime']==-1:
+        redirect("/main")
     form = MeasureForm()
     if form.validate_on_submit():
         db_sess = db_session.create_session()
@@ -83,17 +86,25 @@ def settings():  # форма для регистрации
         settings.num_freq_points = form.pointCnt.data
         settings.rbw_khz = form.rbw.data
         settings.output_power_dbm = form.dbm.data
-        settings.txtr = form.txtr.data
+        settings.txtr = int(form.txtr.data)
         settings.mode = int(form.mode.data)
         db_sess.commit()
 
         if 'measure' in request.form:
-            events.put({'func': emulator.generate_vna_data, 'data': emulator.RecordingSettings(
-                freq_range=emulator.FrequencyRange(settings.freq_start_mhz, settings.freq_stop_mhz,
-                                                   settings.num_freq_points),
-                rbw_khz=settings.rbw_khz, output_power_dbm=settings.output_power_dbm, txtr=settings.txtr,
-                mode=settings.mode
-            )})
+            global activeSession
+            if activeSession is None:
+                events.put(
+                    {"event":"settings", "id": settings.id, "minFrequency": settings.freq_start_mhz, "maxFrequency": settings.freq_stop_mhz,
+                     "countPoints": settings.num_freq_points})
+
+                events.put({"event":"getData",'func': emulator.generate_vna_data, 'data': emulator.RecordingSettings(
+                    freq_range=emulator.FrequencyRange(settings.freq_start_mhz, settings.freq_stop_mhz,
+                                                       settings.num_freq_points),
+                    rbw_khz=settings.rbw_khz, output_power_dbm=settings.output_power_dbm, txtr=settings.txtr,
+                    mode=settings.mode
+                )})
+                activeSession = {'id': current_user.id,
+                                 'time': datetime.datetime.now() + datetime.timedelta(minutes=5)}
             return redirect(f'/main')
         elif 'calibrate' in request.form:
             # vnakit.calibrate(settings)
@@ -108,15 +119,22 @@ def settings():  # форма для регистрации
 
 # ------------------------  API LOGIC  ---------------------------
 
-CURRENT_USER = 5
-remaining_time = 150
 
 
-@app.get("/api/time_user/<int:id>")
-def cur_user(id):
-    if id == CURRENT_USER:
-        return jsonify({"remainingTime": remaining_time})
-    return jsonify({"remainingTime": -1})
+
+@app.get("/api/time_user")
+def cur_user():
+    global activeSession
+    print("/api/time_user", activeSession)
+    if activeSession is None or current_user is None:
+        return jsonify({"remainingTime": 0}) #если remainingTime 0 устройство свободно, если -1 у другого пользователя
+    delta = (activeSession['time'] - datetime.datetime.now()).total_seconds() // 60
+    if delta < 0:
+        activeSession = None
+        return jsonify({"remainingTime": 0})
+    if activeSession['id'] != current_user.id:
+        return jsonify({"remainingTime": -1})
+    return jsonify({"remainingTime": delta})
 
 
 @app.get("/api/userSettings/<int:id>")
@@ -199,6 +217,9 @@ def entry():  # форма для входа
 @app.route('/logout')
 @login_required
 def logout():
+    global activeSession
+    if activeSession is not None and activeSession['id'] == current_user.id:
+        activeSession = None
     logout_user()
     return redirect("/")
 
