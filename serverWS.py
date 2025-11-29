@@ -1,5 +1,6 @@
 import asyncio
 import json
+from queue import Queue
 
 import websockets
 import psutil
@@ -45,7 +46,7 @@ data = {"cpu": cpuData, "S": sData, "settings": sendSettings, "setSettings": set
 
 
 # Обработчик соединения
-async def echo(websocket, path):
+async def echo(websocket):
     try:
         async for message in websocket:
             cmd, *args = message.split(maxsplit=1)
@@ -60,9 +61,17 @@ async def echo(websocket, path):
         print('Close')
 
 
-async def cycle():
+async def cycle(events: Queue):
     global dataCpu
+    loop = asyncio.get_running_loop()  # Получаем текущий цикл событий
     while True:
+        if not events.empty():
+            print("??????????")
+            event = events.get()
+            func = event['func']
+            data = event['data']
+            result = await loop.run_in_executor(None, func, data)
+            print("!!!!", result)
         dataCpu[:-4] = dataCpu[4:]
         updateList = [0] * 4
         for i in range(4):
@@ -72,15 +81,22 @@ async def cycle():
 
 
 # Запуск сервера на localhost:8765
-async def main():
+async def server(events):
     async with websockets.serve(echo, "localhost", 8765):
         print("Сервер запущен на ws://localhost:8765")
         # Запускаем обе задачи параллельно
         await asyncio.gather(
-            cycle(),
+            cycle(events),
             asyncio.Future(),  # чтобы сервер не завершился
         )
 
 
-asyncio.run(main())
+def main(events: Queue):
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(server(events))
+
+
+if __name__ == "__main__":
+    main(Queue())
 # python3 serverWS.py

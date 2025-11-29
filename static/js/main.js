@@ -31,15 +31,19 @@ async function loop() {
                 timeOut = 100;
                 let time = await getCurrentTime(`http://${location.hostname}:8000/api/time_user/${CURRENT_USER}`, websocketHost, websocketPort);
                 console.log("TIME:", time)
-                let btn = document.getElementById("btn-settings")
-                if(time>-1){
-                    document.getElementById("settingsIcon").src = "/src/control.png"
-                    document.getElementById("btn-settings-text").textContent = `${Math.floor(time/60)}:${time%60}`
-                    btn.onclick = () => window.location.href = "/settings";
-                }else{
-                    document.getElementById("settingsIcon").src = "/src/disconnect.png"
-                    document.getElementById("btn-settings-text").textContent = 'Управление у другого пользователя'
-                    btn.onclick = () => null;
+                try{
+                    let btn = document.getElementById("btn-settings")
+                    if(time>-1){
+                        document.getElementById("settingsIcon").src = "/src/control.png"
+                        document.getElementById("btn-settings-text").textContent = `${Math.floor(time/60)}:${time%60}`
+                        btn.onclick = () => window.location.href = "/settings";
+                    }else{
+                        document.getElementById("settingsIcon").src = "/src/disconnect.png"
+                        document.getElementById("btn-settings-text").textContent = 'Управление у другого пользователя'
+                        btn.onclick = () => null;
+                    }
+                }catch(error){
+                    console.log(error)
                 }
             }
 

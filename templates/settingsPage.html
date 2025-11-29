@@ -13,6 +13,82 @@
     }
 </style>
 <h2 class="mb-4 text-center">Настройки ВАЦ</h2>
+ <form action="" method="post" enctype="multipart/form-data">
+            {{ form.hidden_tag() }}
+            <p>
+                {{ form.minFreq.label(style="margin-bottom: 5px;") }}<br>
+                {{ form.minFreq(class="form-control", type="number") }}<br>
+                {% for error in form.minFreq.errors %}
+                    <p class="alert alert-danger" role="alert">{{ error }}</p>
+                {% endfor %}
+            </p>
+            <p>
+                {{ form.maxFreq.label(style="margin-bottom: 5px;") }}<br>
+                {{ form.maxFreq(class="form-control", type="number") }}<br>
+                {% for error in form.maxFreq.errors %}
+                    <p class="alert alert-danger" role="alert">{{ error }}</p>
+                {% endfor %}
+            </p>
+            <p>
+                {{ form.pointCnt.label(style="margin-bottom: 5px;") }}<br>
+                {{ form.pointCnt(class="form-control", type="number") }}<br>
+                {% for error in form.pointCnt.errors %}
+                    <p class="alert alert-danger" role="alert">{{ error }}</p>
+                {% endfor %}
+            </p>
+            <p>
+                {{ form.rbw.label(style="margin-bottom: 5px;") }}<br>
+                {{ form.rbw(class="form-control") }}<br>
+                {% for error in form.rbw.errors %}
+                    <p class="alert alert-danger" role="alert">{{ error }}</p>
+                {% endfor %}
+            </p>
+            <p>
+                {{ form.dbm.label(style="margin-bottom: 5px;") }}<br>
+                {{ form.dbm(class="form-control") }}<br>
+                {% for error in form.dbm.errors %}
+                    <p class="alert alert-danger" role="alert">{{ error }}</p>
+                {% endfor %}
+            </p>
+            <p>
+                {{ form.txtr.label(style="margin-bottom: 5px;") }}<br>
+                {{ form.txtr(class="form-control", type="number") }}<br>
+                {% for error in form.txtr.errors %}
+                    <p class="alert alert-danger" role="alert">{{ error }}</p>
+                {% endfor %}
+            </p>
+            <p>
+                {{ form.mode.label(style="margin-bottom: 5px;") }}<br>
+                {{ form.mode(class="form-control") }}<br>
+                {% for error in form.mode.errors %}
+                    <p class="alert alert-danger" role="alert">{{ error }}</p>
+                {% endfor %}
+            </p>
+
+            <a href="/main" style="float: left;" class="btn btn-danger">Назад</a>
+            <p align="right">
+                {{ form.calibrate(class="btn btn-primary")}}
+                {{ form.measure(class="btn btn-primary")}}</p>
+        </form>
+<script type="module" src="/static/js/settingsPage/main.js"></script>
+
+{% endblock %}
+
+
+
+{% block old_content %}
+<style>
+    form {
+      max-width: 480px;
+      margin: 40px auto;
+      font-family: system-ui, sans-serif;
+    }
+    .error {
+      font-size: 0.85rem;
+      color: #b00020;
+    }
+</style>
+<h2 class="mb-4 text-center">Настройки ВАЦ</h2>
 
 <form id="numsForm" class="needs-validation" novalidate>
 

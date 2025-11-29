@@ -1,15 +1,20 @@
+import datetime
 import os
+from queue import Queue
 
 from flask import Flask, request, jsonify, send_from_directory, render_template, redirect
 from flask_cors import CORS
 from flask_login import LoginManager, current_user, login_user, login_required, logout_user
 from werkzeug.security import check_password_hash
 
-from forms.user import RegisterForm, EntryForm
 from data import db_session
+from data.settings import Setting
 from data.users import User
-import datetime
+from forms.measure import MeasureForm
+from forms.user import RegisterForm, EntryForm
+import emulator
 
+events = Queue()
 app = Flask(
     __name__,
     # template_folder="react-app",  # Jinja2 HTML
@@ -19,7 +24,7 @@ app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "key")  # нужен д�
 app.config["PERMANENT_SESSION_LIFETIME"] = datetime.timedelta(days=1)
 login_manager = LoginManager()
 login_manager.init_app(app)
-#задаёт страницу, на которую перенаправит неавторизованных пользователей при срабатывании @login_required
+# задаёт страницу, на которую перенаправит неавторизованных пользователей при срабатывании @login_required
 login_manager.login_view = '/'
 
 CORS(app)  # как allow_origins=["*"] в FastAPI
@@ -38,21 +43,67 @@ def send_lib(path):
 
 # ------------------------  TEMPLATES  ---------------------------
 
+
 @app.route("/main")
-def home():
+@app.route("/main/<int:id>")
+def home(idMeasure=None):
     name = ''
     try:
         id = current_user.id
         name = current_user.email
     except AttributeError:
         id = 0
-    return render_template("mainPage.html", id=id, name=name)
+    return render_template("mainPage.html", id=id, name=name, idMeasure=idMeasure)
 
 
-@app.route("/settings")
+def fillSettingsForm(form, settings):
+    if settings is not None:
+        form.minFreq.data = settings.freq_start_mhz
+        form.maxFreq.data = settings.freq_stop_mhz
+        form.pointCnt.data = settings.num_freq_points
+        form.rbw.data = settings.rbw_khz
+        form.dbm.data = settings.output_power_dbm
+        form.txtr.data = settings.txtr
+        form.mode.data = settings.mode
+    return form
+
+
+@app.route("/settings", methods=['GET', 'POST'])
 @login_required
-def settings():
-    return render_template("settingsPage.html")
+def settings():  # форма для регистрации
+    form = MeasureForm()
+    if form.validate_on_submit():
+        db_sess = db_session.create_session()
+        settings = db_sess.query(Setting).filter(Setting.author_id == current_user.id).first()
+        if settings is None:
+            settings = Setting(author_id=current_user.id)
+            db_sess.add(settings)
+        settings.freq_start_mhz = form.minFreq.data
+        settings.freq_stop_mhz = form.maxFreq.data
+        settings.num_freq_points = form.pointCnt.data
+        settings.rbw_khz = form.rbw.data
+        settings.output_power_dbm = form.dbm.data
+        settings.txtr = form.txtr.data
+        settings.mode = int(form.mode.data)
+        db_sess.commit()
+
+        if 'measure' in request.form:
+            events.put({'func': emulator.generate_vna_data, 'data': emulator.RecordingSettings(
+                freq_range=emulator.FrequencyRange(settings.freq_start_mhz, settings.freq_stop_mhz,
+                                                   settings.num_freq_points),
+                rbw_khz=settings.rbw_khz, output_power_dbm=settings.output_power_dbm, txtr=settings.txtr,
+                mode=settings.mode
+            )})
+            return redirect(f'/main')
+        elif 'calibrate' in request.form:
+            # vnakit.calibrate(settings)
+            pass
+
+    db_sess = db_session.create_session()
+    settings = db_sess.query(Setting).filter(Setting.author_id == current_user.id).first()
+    fillSettingsForm(form, settings)
+    return render_template('settingsPage.html', title='Регистрация', form=form, name=current_user.email,
+                           id=current_user.id)
 
 
 # ------------------------  API LOGIC  ---------------------------
@@ -105,9 +156,8 @@ def load_user(user_id):
 
 
 @app.route('/register', methods=['GET', 'POST'])
+@login_required
 def register():  # форма для регистрации
-    if current_user.is_authenticated:
-        redirect('/')
     form = RegisterForm()
     if form.validate_on_submit():
         if not form.passIsCorrect():
@@ -122,6 +172,7 @@ def register():  # форма для регистрации
         login_user(user, remember=True)
         return redirect('/')
     return render_template('register.html', title='Регистрация', form=form, id=0)
+
 
 @app.route('/')
 def choice():  # выбор входа или регистрации
@@ -144,6 +195,7 @@ def entry():  # форма для входа
         return redirect('/main')
     return render_template('entry.html', form=form)
 
+
 @app.route('/logout')
 @login_required
 def logout():
@@ -151,6 +203,10 @@ def logout():
     return redirect("/")
 
 
-if __name__ == "__main__":
+def main():
     db_session.global_init("db/VNAData.db")
-    app.run(host="0.0.0.0", port=8000, debug=True)
+    app.run(host="0.0.0.0", port=8000, debug=True, use_reloader=False)
+
+
+if __name__ == "__main__":
+    main()
