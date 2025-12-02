@@ -12,18 +12,13 @@ export class SettingsVNA {
         }
     }
 
-    update(strSettings) {
-        let settings;
-        try {
-            settings = JSON.parse(strSettings);
-        } catch (e) {
-            console.error("Invalid JSON:", strSettings);
-            return false;
-        }
+    update(settings) {
+        let change = (settings.id != this.id || settings.freq_start_mhz != this.minFrequency
+           ||  settings.freq_stop_mhz != this.maxFrequency || settings.num_freq_points != this.countPoints)
         this.id = settings.id ?? this.id;
-        this.minFrequency = settings.minFrequency ?? this.minFrequency;
-        this.maxFrequency = settings.maxFrequency ?? this.maxFrequency;
-        this.countPoints = settings.countPoints ?? this.countPoints;
-        return true;
+        this.minFrequency = settings.freq_start_mhz ?? this.minFrequency;
+        this.maxFrequency = settings.freq_stop_mhz ?? this.maxFrequency;
+        this.countPoints = settings.num_freq_points ?? this.countPoints;
+        return change;
     }
 }
