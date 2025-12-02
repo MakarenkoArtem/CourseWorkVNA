@@ -16,3 +16,5 @@ class Setting(SqlAlchemyBase, SerializerMixin):
     txtr = sqlalchemy.Column(sqlalchemy.Integer, nullable=False)
     mode = sqlalchemy.Column(sqlalchemy.Integer, nullable=False)
 
+    def to_dict(self):
+        return dict(filter(lambda item: item[0] not in ['_sa_instance_state'] , self.__dict__.items()))

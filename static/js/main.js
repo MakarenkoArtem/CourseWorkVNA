@@ -1,70 +1,66 @@
-import {checkWSClient, getWSClient, getSParamWS, WSClient} from './wsClient.js'
+import {Client} from './Client.js'
 import {GraphicSParams} from './GraphicSParams.js'
 import {GraphData} from './GraphData.js'
 import {WSResponse} from './WSResponse.js'
 import {SettingsVNA} from './SettingsVNA.js'
-import {getWSAddress, getCurrentTime} from './getWSAddress.js'
 
 function sleep(ms){
     return new Promise(resolve=>setTimeout(resolve, ms));
 }
 
+function formatTime(time) {
+    const formattedMinutes = String(Math.floor(time / 60)).padStart(2, '0');
+    const formattedSeconds = String(time % 60).padStart(2, '0');
+    return `${formattedMinutes}:${formattedSeconds}`;
+}
+function updateBar(time){
+    try{
+        let btn = document.getElementById("btn-settings")
+        if(time>-1){
+            document.getElementById("settingsIcon").src = "/src/control.png"
+            let text='Устройсво доступно';
+            if (time>0){
+                text=formatTime(time)
+            }
+            document.getElementById("btn-settings-text").textContent = text
+            btn.onclick = () => window.location.href = "/settings";
+        }else{
+            document.getElementById("settingsIcon").src = "/src/disconnect.png"
+            document.getElementById("btn-settings-text").textContent = 'Управление у другого пользователя'
+            btn.onclick = () => null;
+        }
+    }catch(error){
+        console.debug(error)
+    }
+}
+
 let timeOut = 100;
-let websocketHost = null;
-let websocketPort = null;
-let client = null;
-let CURRENT_USER = 5;
 const settings = new SettingsVNA();
+let client = new Client(`http://${location.hostname}:${location.port}`,settings);
 async function loop() {
-    let graphics = new GraphicSParams([
-        [new GraphData("S11", "S11", websocketHost,websocketPort, settings),
-        new GraphData("S12", "S12", websocketHost,websocketPort, settings)],
-        [new GraphData("S21", "S21", websocketHost,websocketPort, settings),
-        new GraphData("S22", "S22", websocketHost,websocketPort, settings)]]);
+    let graphics = new GraphicSParams(settings,
+                                      [[new GraphData("S11", "S11"), new GraphData("S12", "S12")],
+                                      [new GraphData("S21", "S21"), new GraphData("S22", "S22")]]);
     while (1){
         try{
-            if(checkWSClient(client) == null){
-                [websocketHost, websocketPort] =
-                await getWSAddress(`http://${location.hostname}:8000/api/websocket`, websocketHost, websocketPort);
-
-                client = await WSClient.create(`ws://${websocketHost}:${websocketPort}`, settings);
-                timeOut = 100;
-                let time = await getCurrentTime(`http://${location.hostname}:8000/api/time_user/${CURRENT_USER}`, websocketHost, websocketPort);
-                console.log("TIME:", time)
-                let btn = document.getElementById("btn-settings")
-                if(time>-1){
-                    document.getElementById("settingsIcon").src = "/src/control.png"
-                    document.getElementById("btn-settings-text").textContent = `${Math.floor(time/60)}:${time%60}`
-                    btn.onclick = () => window.location.href = "/settings";
-                }else{
-                    document.getElementById("settingsIcon").src = "/src/disconnect.png"
-                    document.getElementById("btn-settings-text").textContent = 'Управление у другого пользователя'
-                    btn.onclick = () => null;
-                }
+            let time = (await client.getJSON("/api/time_user")).remainingTime;
+            timeOut = 5000
+            console.log("TIME:", time)
+            updateBar(time)
+            let change = settings.update(await client.getSettings())
+            if (change){
+                console.debug("Update settings: ", settings)
+                graphics.updateScales()
             }
-
-            console.debug("Update settings: ", settings.update(await client.getSettings()))
-
-            while(client.isSocketOpen()){
-                let resp = await client.getSParams();
-                console.log("Получено через WS:", resp);
-                graphics.takeResponse(resp);
-                timeOut = 50;
-                await sleep(timeOut);
-            }
-            client = null
+            let data = await client.getSParams();
+            graphics.takeResponse(data)
+            await sleep(timeOut);
             console.debug("restart");
         }catch(error){
             console.log("Timeout:", timeOut);
             console.error(error)
             await sleep(timeOut);
             timeOut = Math.min(30000, timeOut*2);
-            websocketHost = null;
-            websocketPort = null;
-            if(client!=null){
-                client.close();
-                client = null;
-            }
         }
     }
 }

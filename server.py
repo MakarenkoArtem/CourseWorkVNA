@@ -1,15 +1,27 @@
+import asyncio
+import datetime
 import os
+from concurrent.futures import ThreadPoolExecutor
+from queue import Queue
+from threading import Thread
 
 from flask import Flask, request, jsonify, send_from_directory, render_template, redirect
 from flask_cors import CORS
 from flask_login import LoginManager, current_user, login_user, login_required, logout_user
 from werkzeug.security import check_password_hash
 
-from forms.user import RegisterForm, EntryForm
+import emulator
+import processing
 from data import db_session
+from data.settings import Setting
 from data.users import User
-import datetime
+from forms.measure import MeasureForm
+from forms.user import RegisterForm, EntryForm
 
+activeSession = None
+SETTINGS = Setting(id=0, author_id=0, freq_start_mhz=1000, freq_stop_mhz=10000, num_freq_points=101, rbw_khz=2,
+                   output_power_dbm=-3, txtr=3, mode=0).to_dict()
+events = Queue()
 app = Flask(
     __name__,
     # template_folder="react-app",  # Jinja2 HTML
@@ -19,7 +31,7 @@ app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "key")  # нужен д�
 app.config["PERMANENT_SESSION_LIFETIME"] = datetime.timedelta(days=1)
 login_manager = LoginManager()
 login_manager.init_app(app)
-#задаёт страницу, на которую перенаправит неавторизованных пользователей при срабатывании @login_required
+# задаёт страницу, на которую перенаправит неавторизованных пользователей при срабатывании @login_required
 login_manager.login_view = '/'
 
 CORS(app)  # как allow_origins=["*"] в FastAPI
@@ -38,47 +50,139 @@ def send_lib(path):
 
 # ------------------------  TEMPLATES  ---------------------------
 
+
 @app.route("/main")
-def home():
+@app.route("/main/<int:id>")
+def home(idMeasure=None):
     name = ''
     try:
         id = current_user.id
         name = current_user.email
     except AttributeError:
         id = 0
-    return render_template("mainPage.html", id=id, name=name)
+    return render_template("mainPage.html", id=id, name=name, idMeasure=idMeasure)
 
 
-@app.route("/settings")
+def fillSettingsForm(form, settings):
+    if settings is not None:
+        form.minFreq.data = settings.freq_start_mhz
+        form.maxFreq.data = settings.freq_stop_mhz
+        form.pointCnt.data = settings.num_freq_points
+        form.rbw.data = settings.rbw_khz
+        form.dbm.data = settings.output_power_dbm
+        form.txtr.data = settings.txtr
+        form.mode.data = settings.mode
+    return form
+
+
+def to_Settings(form, settings):
+    settings.freq_start_mhz = form.minFreq.data
+    settings.freq_stop_mhz = form.maxFreq.data
+    settings.num_freq_points = form.pointCnt.data
+    settings.rbw_khz = form.rbw.data
+    settings.output_power_dbm = form.dbm.data
+    settings.txtr = int(form.txtr.data)
+    settings.mode = int(form.mode.data)
+    return settings
+
+background_loop = asyncio.new_event_loop()
+
+def start_background_loop(loop):
+    asyncio.set_event_loop(loop)
+    loop.run_forever()
+
+t = Thread(target=start_background_loop, args=(background_loop,), daemon=True)
+t.start()
+@app.route("/settings", methods=['GET', 'POST'])
 @login_required
-def settings():
-    return render_template("settingsPage.html")
+def settings():  # форма для регистрации
+    if cur_user().get_json()['remainingTime'] == -1:  # устройство занято другим пользователем
+        redirect("/main")
+    global activeSession, executor, SETTINGS
+    activeSession = {'user': current_user.id, 'time': datetime.datetime.now() + datetime.timedelta(minutes=5)}
+    form = MeasureForm()
+    db_sess = db_session.create_session()
+    settings = db_sess.query(Setting).filter(Setting.author_id == current_user.id).first()
+    if settings is None:
+        settings = Setting(author_id=current_user.id)
+        db_sess.add(settings)
+    if form.validate_on_submit():
+        settings = to_Settings(form, settings)
+        settDict = settings.to_dict()
+        db_sess.commit()
+        if 'measure' in request.form:
+            if activeSession['user'] == current_user.id:
+                SETTINGS = settDict
+                background_loop.call_soon_threadsafe(
+                    asyncio.create_task,newData(emulator.generate_vna_data, emulator.RecordingSettings(
+                    freq_range=emulator.FrequencyRange(settDict['freq_start_mhz'], settDict['freq_stop_mhz'],
+                                                       settDict['num_freq_points']),
+                    rbw_khz=settDict['rbw_khz'], output_power_dbm=settDict['output_power_dbm'], txtr=settDict['txtr'],
+                    mode=settDict['mode'])))
+                db_sess.close()
+            return redirect(f'/main')
+        elif 'calibrate' in request.form:
+            # vnakit.calibrate(settings)
+            pass
+    db_sess.close()
+    fillSettingsForm(form, settings)
+    return render_template('settingsPage.html', form=form, name=current_user.email, id=current_user.id)
+
+
+DATA = None
+'''processing.get_uncalibrated_s(emulator.generate_vna_data, emulator.RecordingSettings(
+                    freq_range=emulator.FrequencyRange(SETTINGS.freq_start_mhz, SETTINGS.freq_stop_mhz,
+                                                       SETTINGS.num_freq_points),
+                    rbw_khz=SETTINGS.rbw_khz, output_power_dbm=SETTINGS.output_power_dbm, txtr=SETTINGS.txtr,
+                    mode=SETTINGS.mode))'''
+
+
+async def newData(func, *args):
+    global DATA
+    DATA = processing.get_uncalibrated_s(func(*args))
+    DATA.S11 = list(map(abs, DATA.S11))
+    DATA.S12 = list(map(abs, DATA.S12))
+    DATA.S21 = list(map(abs, DATA.S21))
+    DATA.S22 = list(map(abs, DATA.S22))
+    print("!!!!", DATA.__dict__)
 
 
 # ------------------------  API LOGIC  ---------------------------
+@app.get("/api/get_data")
+def get_data():
+    global DATA
+    return jsonify(DATA.__dict__)
 
-CURRENT_USER = 5
-remaining_time = 150
+@app.get("/api/time_user")
+def cur_user():
+    global activeSession
+    if activeSession is None or current_user is None:
+        return jsonify({"remainingTime": 0})  # если remainingTime 0 устройство свободно, если -1 у другого пользователя
+    delta = (activeSession['time'] - datetime.datetime.now()).total_seconds() // 60
+    if delta < 0:
+        activeSession = None
+        return jsonify({"remainingTime": 0})
+    if activeSession['user'] != current_user.id:
+        return jsonify({"remainingTime": -1})
+    return jsonify({"remainingTime": delta})
 
 
-@app.get("/api/time_user/<int:id>")
-def cur_user(id):
-    if id == CURRENT_USER:
-        return jsonify({"remainingTime": remaining_time})
-    return jsonify({"remainingTime": -1})
+@app.get("/api/getSparams")
+def get_Sparams():
+    global SETTINGS
+    return jsonify(SETTINGS)
 
 
-@app.get("/api/userSettings/<int:id>")
-def get_user_settings(id):
-    # TODO — вернуть настройки пользователя
+@app.get("/api/settings")
+def get_settings():
+    global SETTINGS
+    print(SETTINGS)
+    return jsonify(SETTINGS)
+
+
+@app.get("/api/userSettings")
+def get_user_settings():
     return jsonify({"status": "not implemented"})
-
-
-@app.put("/api/userSettings/<int:id>")
-def update_user_settings(id):
-    data = request.get_json()  # аналог request.json() в FastAPI
-    # TODO — обновить настройки пользователя
-    return jsonify({"status": "not implemented", "received": data})
 
 
 @app.get("/api/currentSettings")
@@ -105,9 +209,8 @@ def load_user(user_id):
 
 
 @app.route('/register', methods=['GET', 'POST'])
+@login_required
 def register():  # форма для регистрации
-    if current_user.is_authenticated:
-        redirect('/')
     form = RegisterForm()
     if form.validate_on_submit():
         if not form.passIsCorrect():
@@ -119,9 +222,11 @@ def register():  # форма для регистрации
         user.set_password(form.password.data)
         db_sess.add(user)
         db_sess.commit()
+        db_sess.close()
         login_user(user, remember=True)
         return redirect('/')
     return render_template('register.html', title='Регистрация', form=form, id=0)
+
 
 @app.route('/')
 def choice():  # выбор входа или регистрации
@@ -144,13 +249,21 @@ def entry():  # форма для входа
         return redirect('/main')
     return render_template('entry.html', form=form)
 
+
 @app.route('/logout')
 @login_required
 def logout():
+    global activeSession
+    if activeSession is not None and activeSession['user'] == current_user.id:
+        activeSession = None
     logout_user()
     return redirect("/")
 
 
-if __name__ == "__main__":
+def main():
     db_session.global_init("db/VNAData.db")
-    app.run(host="0.0.0.0", port=8000, debug=True)
+    app.run(host="0.0.0.0", port=8000, debug=True, use_reloader=False)
+
+
+if __name__ == "__main__":
+    main()

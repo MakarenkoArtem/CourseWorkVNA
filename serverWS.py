@@ -1,9 +1,45 @@
 import asyncio
 import json
-
+from queue import Queue
+from emulator import VNAData
 import websockets
 import psutil
 import struct
+
+
+class Smatrixs:
+    def __init__(self, N):
+        self.frequency = [0.0] * N
+        self.S11 = [0.0] * N
+        self.S12 = [0.0] * N
+        self.S21 = [0.0] * N
+        self.S22 = [0.0] * N
+
+
+def get_uncalibrated_s(data: VNAData) -> Smatrixs:
+    N = len(data.frequency)
+    res = Smatrixs(N)
+
+    for i in range(N):
+        # Check for division by zero
+        if abs(data.a0[i]) < 1e-15:
+            print(f"Warning: a0[{i}] is close to zero! freq = {data.frequency[i]}")
+            res.S11[i] = 0.0
+            res.S21[i] = 0.0
+        else:
+            res.S11[i] = data.b0_3[i] / data.a0[i]
+            res.S21[i] = data.b3_3[i] / data.a0[i]
+
+        if abs(data.a3[i]) < 1e-15:
+            print(f"Warning: a3[{i}] is close to zero! freq = {data.frequency[i]}")
+            res.S12[i] = 0.0
+            res.S22[i] = 0.0
+        else:
+            res.S12[i] = data.b0_6[i] / data.a3[i]
+            res.S22[i] = data.b3_6[i] / data.a3[i]
+
+    return res
+
 
 settings = {"id": 0, "minFrequency": 0, "maxFrequency": 200, "countPoints": 201}
 dataCpu = [0] * settings["countPoints"] * 4
@@ -45,7 +81,7 @@ data = {"cpu": cpuData, "S": sData, "settings": sendSettings, "setSettings": set
 
 
 # Обработчик соединения
-async def echo(websocket, path):
+async def echo(websocket):
     try:
         async for message in websocket:
             cmd, *args = message.split(maxsplit=1)
@@ -60,27 +96,56 @@ async def echo(websocket, path):
         print('Close')
 
 
-async def cycle():
-    global dataCpu
+async def cycle(events: Queue):
+    global dataCpu, settings
+    loop = asyncio.get_running_loop()  # Получаем текущий цикл событий
     while True:
-        dataCpu[:-4] = dataCpu[4:]
+        if not events.empty():
+            event = events.get()
+            print(event)
+            match event.get('event', None):
+                case 'settings':
+                    delta = event['countPoints'] - settings['countPoints']
+                    if delta > 0:
+                        dataCpu = [0] * 4 * delta + dataCpu
+                    elif delta < 0:
+                        dataCpu = dataCpu[:-delta + 4]
+                    settings = {key: value for key, value in event.items() if key != 'event'}
+                case 'getData':
+                    func = event['func']
+                    data = event['data']
+                    result = await loop.run_in_executor(None, func, data)
+                    data = get_uncalibrated_s(result)
+                    print("!!!!", result)
+                    print(data)
+                    dataCpu = [abs(value) for values in zip(data.S11, data.S12, data.S21, data.S22) for value in values]
+                    print(dataCpu)
+        '''dataCpu[:-4] = dataCpu[4:]
         updateList = [0] * 4
         for i in range(4):
             updateList[i] = psutil.cpu_percent(interval=0.005)
             await asyncio.sleep(0)  # отдаём управление циклу событий
-        dataCpu[-4:] = updateList
+        dataCpu[-4:] = updateList'''
+        await asyncio.sleep(0)  # отдаём управление циклу событий
 
 
 # Запуск сервера на localhost:8765
-async def main():
+async def server(events):
     async with websockets.serve(echo, "localhost", 8765):
         print("Сервер запущен на ws://localhost:8765")
         # Запускаем обе задачи параллельно
         await asyncio.gather(
-            cycle(),
+            cycle(events),
             asyncio.Future(),  # чтобы сервер не завершился
         )
 
 
-asyncio.run(main())
+def main(events: Queue):
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(server(events))
+
+
+if __name__ == "__main__":
+    main(Queue())
 # python3 serverWS.py

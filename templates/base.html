@@ -20,19 +20,21 @@
 <body>
 <nav class="navbar navbar-dark bg-primary"
      style="display: flex;justify-content: space-between; align-items: center; padding: 10px 15px;">
-    {% if id!=null and id < 0 %}
-        <button id="btn-settings" style="margin-left:15px" class="btn btn-primary">
-            <img id="settingsIcon" src="/src/control.png" alt="Settings"
-                 style="width: 40px; height: 40px; margin-right: 5px;">
-            <span id="btn-settings-text">00:00</span>
-        </button>
+    {% if id!=null and id > 0 %}
+        <a href="/settings">
+            <button id="btn-settings" style="margin-left:15px" class="btn btn-primary">
+                <img id="settingsIcon" src="/src/control.png" alt="Settings"
+                     style="width: 40px; height: 40px; margin-right: 5px;">
+                <span id="btn-settings-text">{{time}}</span>
+            </button>
+        </a>
         <div class="dropdown" style="margin-right:15px">
             <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown"
                     aria-expanded="false">
                 <img src="/static/img/user_images/0.png" align="right" alt="" style="width: 40px; height: 40px;"
                      class="round">
             </button>
-            <ul class="dropdown-menu">
+            <ul class="dropdown-menu dropdown-menu-end">
                 <li class="dropdown-header"><h4 class="mainText">{{ name }}</h4>
                     Настройки пользователя
                 </li>
