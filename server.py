@@ -38,19 +38,12 @@ CORS(app)  # как allow_origins=["*"] в FastAPI
 
 
 # Static mounts (как app.mount в FastAPI)
-@app.route('/src/<path:path>')
-def send_src(path):
-    return send_from_directory('react-app/src', path)
-
-
 @app.route('/lib/<path:path>')
 def send_lib(path):
-    return send_from_directory('react-app/lib', path)
+    return send_from_directory('static/lib', path)
 
 
 # ------------------------  TEMPLATES  ---------------------------
-
-
 @app.route("/main")
 @app.route("/main/<int:id>")
 def home(idMeasure=None):
@@ -85,14 +78,19 @@ def to_Settings(form, settings):
     settings.mode = int(form.mode.data)
     return settings
 
+
 background_loop = asyncio.new_event_loop()
+
 
 def start_background_loop(loop):
     asyncio.set_event_loop(loop)
     loop.run_forever()
 
+
 t = Thread(target=start_background_loop, args=(background_loop,), daemon=True)
 t.start()
+
+
 @app.route("/settings", methods=['GET', 'POST'])
 @login_required
 def settings():  # форма для регистрации
@@ -114,11 +112,12 @@ def settings():  # форма для регистрации
             if activeSession['user'] == current_user.id:
                 SETTINGS = settDict
                 background_loop.call_soon_threadsafe(
-                    asyncio.create_task,newData(emulator.generate_vna_data, emulator.RecordingSettings(
-                    freq_range=emulator.FrequencyRange(settDict['freq_start_mhz'], settDict['freq_stop_mhz'],
-                                                       settDict['num_freq_points']),
-                    rbw_khz=settDict['rbw_khz'], output_power_dbm=settDict['output_power_dbm'], txtr=settDict['txtr'],
-                    mode=settDict['mode'])))
+                    asyncio.create_task, newData(emulator.generate_vna_data, emulator.RecordingSettings(
+                        freq_range=emulator.FrequencyRange(settDict['freq_start_mhz'], settDict['freq_stop_mhz'],
+                                                           settDict['num_freq_points']),
+                        rbw_khz=settDict['rbw_khz'], output_power_dbm=settDict['output_power_dbm'],
+                        txtr=settDict['txtr'],
+                        mode=settDict['mode'])))
                 db_sess.close()
             return redirect(f'/main')
         elif 'calibrate' in request.form:
@@ -152,6 +151,7 @@ async def newData(func, *args):
 def get_data():
     global DATA
     return jsonify(DATA.__dict__)
+
 
 @app.get("/api/time_user")
 def cur_user():

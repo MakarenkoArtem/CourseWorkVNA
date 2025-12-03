@@ -23,9 +23,6 @@ export class Graphic{
         Plotly.newPlot(data.divId, data, layout);
         changeScale(graphData);
     }
-
-
-
     /*
     changeScale(data){
         if (!(data instanceof GraphData)) {

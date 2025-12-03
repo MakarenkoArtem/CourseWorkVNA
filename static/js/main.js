@@ -32,7 +32,6 @@ function updateBar(time){
     }
 }
 
-let timeOut = 1000;
 const settings = new SettingsVNA();
 let client = new Client(`http://${location.hostname}:${location.port}`,settings);
 async function loop() {
@@ -41,9 +40,7 @@ async function loop() {
                                       [new GraphData("S21", "S21"), new GraphData("S22", "S22")]]);
     while (1){
         try{
-            console.log("client:", client);
-            let time = await client.getRemainingTime();
-            timeOut = 5000
+            let time = await client.getRemainingTime()
             console.log("TIME:", time)
             updateBar(time)
             let isChanged = settings.update(await client.getSettings())
@@ -51,15 +48,13 @@ async function loop() {
                 console.debug("Update settings: ", settings)
                 graphics.updateScales()
             }
-            let data = await client.getSParams();
+            let data = await client.getSParams()
             graphics.takeResponse(data)
-            await client.delay(timeOut);
-            console.log(client)
+            await client.delay()
         }catch(error){
             console.log("Timeout:", timeOut);
             console.error(error)
-            await client.delay(timeOut);
-            client.timeOut = Math.min(30000, client.timeOut*2);
+            await client.delay(10000);
         }
     }
 }

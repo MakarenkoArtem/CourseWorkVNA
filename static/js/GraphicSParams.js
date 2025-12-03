@@ -14,7 +14,7 @@ export class GraphicSParams{
         this.graphics=sGraphics;
         this.initPlots();
     }
-     async initPlots() {
+    async initPlots() {
         for (let i = 0; i < 2; ++i) {
             for (let j = 0; j < 2; ++j) {
                 console.log("График создан:", i, j);

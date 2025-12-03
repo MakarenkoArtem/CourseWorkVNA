@@ -1,14 +1,9 @@
 export class SettingsVNA {
-    constructor(strSettings = "") {
+    constructor() {
         this.id = 0;
         this.minFrequency = 9000;
         this.maxFrequency = 10500;
         this.countPoints = 51;
-
-        // Если передана строка, обновляем значения
-        if (strSettings && strSettings.length) {
-            this.update(strSettings);
-        }
     }
 
     update(settings) {
