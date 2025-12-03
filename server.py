@@ -18,7 +18,7 @@ from data.users import User
 from forms.measure import MeasureForm
 from forms.user import RegisterForm, EntryForm
 
-activeSession = None
+activeSession = {}
 SETTINGS = Setting(id=0, author_id=0, freq_start_mhz=1000, freq_stop_mhz=10000, num_freq_points=101, rbw_khz=2,
                    output_power_dbm=-3, txtr=3, mode=0).to_dict()
 events = Queue()
@@ -156,11 +156,11 @@ def get_data():
 @app.get("/api/time_user")
 def cur_user():
     global activeSession
-    if activeSession is None or current_user is None:
+    if activeSession =={} or current_user is None:
         return jsonify({"remainingTime": 0})  # если remainingTime 0 устройство свободно, если -1 у другого пользователя
     delta = (activeSession['time'] - datetime.datetime.now()).total_seconds() // 60
     if delta < 0:
-        activeSession = None
+        activeSession = {}
         return jsonify({"remainingTime": 0})
     if activeSession['user'] != current_user.id:
         return jsonify({"remainingTime": -1})
@@ -209,7 +209,6 @@ def load_user(user_id):
 
 
 @app.route('/register', methods=['GET', 'POST'])
-@login_required
 def register():  # форма для регистрации
     form = RegisterForm()
     if form.validate_on_submit():
@@ -233,29 +232,27 @@ def choice():  # выбор входа или регистрации
     return render_template("choice.html")
 
 
-@app.route('/entry', methods=['GET', 'POST'])
-def entry():  # форма для входа
+@app.route('/login', methods=['GET', 'POST'])
+def login():  # форма для входа
     form = EntryForm()
     if form.validate_on_submit():
         db_sess = db_session.create_session()
-        curUser = None
-        for user in db_sess.query(User).all():
-            if user.email == form.email.data and check_password_hash(user.hashed_password, form.password.data):
-                curUser = user
-                break
+        curUser = db_sess.query(User).filter(User.email == form.email.data and check_password_hash(User.hashed_password, form.password.data)).first()
         if curUser is None:
-            return render_template('entry.html', form=form, message="Такой пользователь не найден")
+            db_sess.close()
+            return render_template('login.html', form=form, message="Такой пользователь не найден")
         login_user(curUser, remember=True)
+        db_sess.close()
         return redirect('/main')
-    return render_template('entry.html', form=form)
+    return render_template('login.html', form=form)
 
 
 @app.route('/logout')
 @login_required
 def logout():
     global activeSession
-    if activeSession is not None and activeSession['user'] == current_user.id:
-        activeSession = None
+    if activeSession.get('user', None) == current_user.id:
+        activeSession = {}
     logout_user()
     return redirect("/")
 
