@@ -128,12 +128,21 @@ def settings():  # форма для регистрации
     return render_template('settingsPage.html', form=form, name=current_user.email, id=current_user.id)
 
 
-DATA = None
-'''processing.get_uncalibrated_s(emulator.generate_vna_data, emulator.RecordingSettings(
-                    freq_range=emulator.FrequencyRange(SETTINGS.freq_start_mhz, SETTINGS.freq_stop_mhz,
-                                                       SETTINGS.num_freq_points),
-                    rbw_khz=SETTINGS.rbw_khz, output_power_dbm=SETTINGS.output_power_dbm, txtr=SETTINGS.txtr,
-                    mode=SETTINGS.mode))'''
+# === ИНИЦИАЛИЗАЦИЯ DATA ДЛЯ БЕЗОПАСНОГО ИСПОЛЬЗОВАНИЯ ===
+from dataclasses import dataclass
+
+@dataclass
+class DataStub:
+    S11: list = None
+    S12: list = None
+    S21: list = None
+    S22: list = None
+
+DATA = DataStub()
+DATA.S11 = [0.0] * 101
+DATA.S12 = [0.0] * 101
+DATA.S21 = [0.0] * 101
+DATA.S22 = [0.0] * 101
 
 
 async def newData(func, *args):

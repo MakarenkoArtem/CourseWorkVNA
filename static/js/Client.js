@@ -1,4 +1,4 @@
- import {Response} from './Response.js';
+import { Response } from './Response..js';
 
 export class Client {
     constructor(address, settings) {
@@ -7,30 +7,30 @@ export class Client {
         this.settings = settings;
     }
 
-    async getSettings(message="settings"){
+    async getSettings(message = "settings") {
         return this.getJSON("/api/settings", message);
     }
 
-    async updateSettings(message="settings"){
+    async updateSettings(message = "settings") {
         return this.settings.updateSettings(this.getSettings(message));
     }
 
-    async getRemainingTime(path="/api/time_user"){
+    async getRemainingTime(path = "/api/time_user") {
         return (await this.getJSON(path)).remainingTime
     }
 
-    async getSParams(path="/api/get_data"){
+    async getSParams(path = "/api/get_data") {
         const data = await this.getJSON(path);
         return new Response(data);
     }
-    async getJSON(path, message="") {
-        const response = await fetch(this.address+path, {method: "GET"})
-        if(response.ok){
+    async getJSON(path, message = "") {
+        const response = await fetch(this.address + path, { method: "GET" })
+        if (response.ok) {
             return await response.json();
         }
         throw new Error(`HTTP error ${response.status}`);
     }
-    async delay(ms=this.timeout){
-        return new Promise(resolve=>setTimeout(resolve, ms));
+    async delay(ms = this.timeout) {
+        return new Promise(resolve => setTimeout(resolve, ms));
     }
 }
