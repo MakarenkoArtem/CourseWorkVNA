@@ -1,0 +1,52 @@
+from flask import jsonify
+
+
+def get_nested_attr(obj, attr):
+    """Retrieve a nested attribute from an object."""
+    for part in attr.split('.'):
+        obj = getattr(obj, part)
+    return obj
+
+
+def cpyData(obj, source, mapp):
+    for source_key, target_key in mapp.items():
+        try:
+            value = get_nested_attr(source, source_key)
+            setattr(obj, target_key, value)
+        except AttributeError as e:
+            print(f"Error accessing attribute '{source_key}': {e}")
+
+
+class SettingsModel:
+    id = -1
+    author_id = -1
+    freq_start_mhz = 100
+    freq_stop_mhz = 1000
+    num_freq_points = 100
+    rbw_khz = 1
+    output_power_dbm = -3
+    txtr = 3
+    mode = 0
+    calib_HH = 1
+    calib_KZ = 1
+    calib_Match = 1
+    calib_Bolt = 1
+
+    def fromDB(self, dbSettings):
+        mapp = {'id': 'id', 'author_id': 'author_id', 'freq_start_mhz': 'freq_start_mhz',
+                'freq_stop_mhz': 'freq_stop_mhz', 'num_freq_points': 'num_freq_points', 'rbw_khz': 'rbw_khz',
+                'output_power_dbm': 'output_power_dbm', 'txtr': 'txtr', 'mode': 'mode'}
+        cpyData(self, dbSettings, mapp)
+        return self
+
+    def fromForm(self, form):
+        mapp = {'freq_start_mhz.data': 'freq_start_mhz', 'freq_stop_mhz.data': 'freq_stop_mhz',
+                'num_freq_points.data': 'num_freq_points', 'rbw_khz.data': 'rbw_khz',
+                'output_power_dbm.data': 'output_power_dbm', 'txtr.data': 'txtr', 'mode.data': 'mode'}
+        cpyData(self, form, mapp)
+        self.txtr = int(self.txtr)
+        self.mode = int(self.mode)
+        return self
+
+    def toJSON(self):
+        return jsonify(self.__dict__)

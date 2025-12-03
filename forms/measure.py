@@ -9,11 +9,11 @@ def validate_freq(form, field):
 
 
 class MeasureForm(FlaskForm):
-    minFreq = FloatField("Минимальная частота", validators=[DataRequired(), validate_freq])
-    maxFreq = FloatField("Максимальная частота", validators=[DataRequired(), validate_freq])
-    pointCnt = IntegerField("Число точек", validators=[DataRequired(), validate_freq])
-    rbw = FloatField("RBW", validators=[DataRequired()])
-    dbm = FloatField('dBm', validators=[DataRequired()])
+    freq_start_mhz = FloatField("Минимальная частота", validators=[DataRequired(), validate_freq])
+    freq_stop_mhz = FloatField("Максимальная частота", validators=[DataRequired(), validate_freq])
+    num_freq_points = IntegerField("Число точек", validators=[DataRequired(), validate_freq])
+    rbw_khz = FloatField("RBW", validators=[DataRequired()])
+    output_power_dbm = FloatField('dBm', validators=[DataRequired()])
     txtr = SelectField("Тип измерений", choices=[
         (3, '3'), (6, '6')], validators=[DataRequired()])
     mode = SelectField("Тип измерений", choices=[

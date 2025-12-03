@@ -52,7 +52,6 @@ async function loop() {
             graphics.takeResponse(data)
             await client.delay()
         }catch(error){
-            console.log("Timeout:", timeOut);
             console.error(error)
             await client.delay(10000);
         }
