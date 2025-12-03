@@ -1,6 +1,5 @@
 export class SettingsVNA {
     constructor(strSettings = "") {
-        // Дефолтные значения
         this.id = 0;
         this.minFrequency = 9000;
         this.maxFrequency = 10500;

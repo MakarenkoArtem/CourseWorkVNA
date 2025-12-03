@@ -1,5 +1,5 @@
 import {GraphData} from './GraphData.js'
-import {WSResponse} from './WSResponse.js'
+import {Response} from './Response.js'
 
 function range(start, end, step = 1) {
   return Array.from({ length: Math.ceil((end - start) / step) }, (_, i) => start + i * step);
@@ -79,8 +79,8 @@ export class GraphicSParams{
         this.updateScale(this.graphics[1][1]);
     }
    takeResponse(resp){
-        if (!(resp instanceof WSResponse)) {
-            throw new TypeError("Ожидается WSResponse");
+        if (!(resp instanceof Response)) {
+            throw new TypeError("Ожидается Response");
         }
 
         this.graphics[0][0].data=resp.sParams[0][0];
