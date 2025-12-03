@@ -220,10 +220,12 @@ def register():  # форма для регистрации
         user = User(email=form.email.data)
         user.set_password(form.password.data)
         db_sess.add(user)
+        curUser = db_sess.query(User).filter(User.email == form.email.data and check_password_hash(User.hashed_password, form.password.data)).first()
+        if curUser is not None:
+            login_user(curUser, remember=True)
         db_sess.commit()
         db_sess.close()
-        login_user(user, remember=True)
-        return redirect('/')
+        return redirect('/main')
     return render_template('register.html', title='Регистрация', form=form, id=0)
 
 
