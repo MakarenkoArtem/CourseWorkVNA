@@ -73,77 +73,96 @@ async function loop() {
 // --- ЗАПУСК ЦИКЛА ---
 loop();
 
-// === ОБРАБОТЧИК ПКМ: ТОЧКА ПОД КУРСОРОМ + ПРАВИЛЬНЫЕ КООРДИНАТЫ ===
+// === ОБРАБОТЧИК ПКМ ДЛЯ ВСЕХ ГРАФИКОВ ===
 function attachContextMenuToGraphs() {
     document.querySelectorAll('[data-role="graph"]').forEach(graph => {
         if (!graph.dataset.contextMenuHandled) {
-            graph.addEventListener('contextmenu', (e) => {
+            graph.addEventListener('contextmenu', async (e) => {
                 e.preventDefault();
 
+                const fullLayout = graph._fullLayout;
+                if (!fullLayout) {
+                    console.warn("График ещё не проинициализирован");
+                    return;
+                }
+
+                const xaxis = fullLayout.xaxis;
+                const yaxis = fullLayout.yaxis;
+
+                // Проверяем, что оси инициализированы
+                if (!xaxis || !yaxis || xaxis._length === undefined || yaxis._length === undefined) {
+                    console.warn("Оси графика не готовы");
+                    return;
+                }
+
+                // Получаем смещения и размеры области графика (plot area)
+                const plotLeft = xaxis._offset;
+                const plotTop = yaxis._offset;
+                const plotWidth = xaxis._length;
+                const plotHeight = yaxis._length;
+
+                // Позиция курсора относительно контейнера графика
                 const rect = graph.getBoundingClientRect();
                 const xRel = e.clientX - rect.left;
                 const yRel = e.clientY - rect.top;
 
-                // Получаем layout
-                const layout = graph.layout;
-                if (!layout || !layout.xaxis || !layout.yaxis) {
-                    console.warn("Layout не доступен");
-                    return;
+                // Проверяем, попадает ли клик в plot area
+                if (xRel < plotLeft || xRel > plotLeft + plotWidth ||
+                    yRel < plotTop || yRel > plotTop + plotHeight) {
+                    return; // Игнорируем клик вне графика
                 }
 
-                const xaxis = layout.xaxis;
-                const yaxis = layout.yaxis;
+                // Преобразуем пиксели → данные
+                const xFraction = (xRel - plotLeft) / plotWidth;
+                const yFraction = 1 - (yRel - plotTop) / plotHeight; // y идёт сверху вниз
 
-                // --- ВЫЧИСЛЯЕМ РЕАЛЬНЫЕ КООРДИНАТЫ ---
-                const xData = xaxis.range[0] + (xRel / rect.width) * (xaxis.range[1] - xaxis.range[0]);
-                const yData = yaxis.range[1] - (yRel / rect.height) * (yaxis.range[1] - yaxis.range[0]);
+                const xMin = xaxis.range[0];
+                const xMax = xaxis.range[1];
+                const yMin = yaxis.range[0];
+                const yMax = yaxis.range[1];
 
-                // --- СОЗДАЁМ ТОЧКУ ПОД КУРСОРОМ ---
-                const point = document.createElement('div');
-                point.className = 'plotly-click-point';
-                point.style.cssText = `
-                    position: absolute;
-                    width: 10px;
-                    height: 10px;
-                    background: red;
-                    border-radius: 50%;
-                    transform: translate(-50%, -50%);
-                    pointer-events: none;
-                    left: ${xRel}px;
-                    top: ${yRel}px;
-                    z-index: 10;
-                `;
-                graph.appendChild(point);
+                const xData = xMin + xFraction * (xMax - xMin);
+                const yData = yMin + yFraction * (yMax - yMin);
 
-                // --- СОЗДАЁМ ПОДПИСЬ С РЕАЛЬНЫМИ КООРДИНАТАМИ ---
+                // Добавляем точку
+                await Plotly.addTraces(graph, {
+                    x: [xData],
+                    y: [yData],
+                    mode: 'markers',
+                    marker: { size: 10, color: 'red' },
+                    showlegend: false,
+                    name: 'click-point'
+                });
+
+                // Подпись
                 const coord = document.createElement('div');
                 coord.className = 'plotly-click-coord';
                 coord.textContent = `(${xData.toFixed(2)}, ${yData.toFixed(2)})`;
                 coord.style.cssText = `
                     position: absolute;
-                    background: rgba(0,0,0,0.9);
+                    background: rgba(0,0,0,0.8);
                     color: white;
                     padding: 2px 6px;
                     font-size: 12px;
                     border-radius: 4px;
                     pointer-events: none;
                     white-space: nowrap;
-                    left: ${xRel + 12}px;
-                    top: ${yRel - 20}px;
-                    z-index: 11;
+                    left: ${e.clientX - rect.left + 12}px;
+                    top: ${e.clientY - rect.top - 20}px;
+                    z-index: 10;
                 `;
                 graph.appendChild(coord);
 
-                // Удаляем через 5 сек
                 setTimeout(() => {
-                    point.remove();
-                    coord.remove();
-                }, 5000);
+                    if (coord.parentNode === graph) coord.remove();
+                }, 3000);
             });
+
             graph.dataset.contextMenuHandled = "true";
         }
     });
 }
 
+// Запускаем сразу и повторяем, если графики рисуются асинхронно
 attachContextMenuToGraphs();
 setInterval(attachContextMenuToGraphs, 2000);
