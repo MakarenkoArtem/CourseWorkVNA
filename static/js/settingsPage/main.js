@@ -1,8 +1,8 @@
 import {Client} from '../Client.js'
-import {Response} from '../Response.js'
-import {SettingsVNA} from '../SettingsVNA.js'
 import {GraphicSParams} from './GraphicSParams.js'
 import {GraphData} from './GraphData.js'
+import {Response} from './Response.js'
+import {SettingsVNA} from './SettingsVNA.js'
 
 
 function formatTime(time) {
@@ -35,21 +35,18 @@ function updateBar(time){
 const settings = new SettingsVNA();
 let client = new Client(`http://${location.hostname}:${location.port}`,settings);
 async function loop() {
-    let graphics = new GraphicSParams(settings,
-                                      [[new GraphData("S11", "S11"), new GraphData("S12", "S12")],
-                                      [new GraphData("S21", "S21"), new GraphData("S22", "S22")]]);
     while (1){
         try{
             let time = await client.getRemainingTime()
             console.log("TIME:", time)
             updateBar(time)
+            console.log(await client.getSettings());
             let isChanged = settings.update(await client.getSettings())
             if (isChanged){
                 console.debug("Update settings: ", settings)
                 graphics.updateScales()
             }
             let data = await client.getSParams()
-            graphics.takeResponse(data)
             await client.delay()
         }catch(error){
             console.error(error)
