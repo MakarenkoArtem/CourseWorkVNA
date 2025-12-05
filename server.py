@@ -1,7 +1,6 @@
 import asyncio
 import datetime
 import os
-from concurrent.futures import ThreadPoolExecutor
 from queue import Queue
 from threading import Thread
 
@@ -102,10 +101,11 @@ def settings():  # форма для регистрации
     db_sess = db_session.create_session()
     settings = db_sess.query(Setting).filter(Setting.author_id == current_user.id).first()
     if settings is None:
-        settings = Setting(author_id=current_user.id)
+        settings = SettingsModel(author_id=current_user.id).toDB(Setting())
         db_sess.add(settings)
     if form.validate_on_submit():
-        newSettings = SettingsModel().fromForm(form)
+        newSettings = SettingsModel(author_id=current_user.id).fromForm(form)
+        newSettings.toDB(settings)
         db_sess.commit()
         if 'measure' in request.form:
             if activeSession['user'] == current_user.id:
@@ -122,8 +122,8 @@ def settings():  # форма для регистрации
         elif 'calibrate' in request.form:
             # vnakit.calibrate(settings)
             pass
-    db_sess.close()
     fillSettingsForm(form, settings)
+    db_sess.close()
     return render_template('settingsPage.html', form=form, name=current_user.email, id=current_user.id)
 
 
