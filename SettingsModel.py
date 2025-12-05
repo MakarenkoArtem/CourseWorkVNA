@@ -32,6 +32,9 @@ class SettingsModel:
     calib_Match = 1
     calib_Bolt = 1
 
+    def __init__(self, author_id=-1):
+        self.author_id = author_id
+
     def fromDB(self, dbSettings):
         mapp = {'id': 'id', 'author_id': 'author_id', 'freq_start_mhz': 'freq_start_mhz',
                 'freq_stop_mhz': 'freq_stop_mhz', 'num_freq_points': 'num_freq_points', 'rbw_khz': 'rbw_khz',
@@ -47,6 +50,13 @@ class SettingsModel:
         self.txtr = int(self.txtr)
         self.mode = int(self.mode)
         return self
+
+    def toDB(self, dbSettings):
+        mapp = {'author_id': 'author_id', 'freq_start_mhz': 'freq_start_mhz',
+                'freq_stop_mhz': 'freq_stop_mhz', 'num_freq_points': 'num_freq_points', 'rbw_khz': 'rbw_khz',
+                'output_power_dbm': 'output_power_dbm', 'txtr': 'txtr', 'mode': 'mode'}
+        cpyData(dbSettings, self, mapp)
+        return dbSettings
 
     def toJSON(self):
         return jsonify(self.__dict__)

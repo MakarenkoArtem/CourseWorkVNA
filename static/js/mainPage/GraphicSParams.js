@@ -2,16 +2,16 @@ import {GraphData} from './GraphData.js'
 import {Response} from '../Response.js'
 
 function range(start, end, step = 1) {
-  return Array.from({ length: Math.ceil((end - start) / step) }, (_, i) => start + i * step);
+    return Array.from({ length: Math.ceil((end - start) / step) }, (_, i) => start + i * step);
 }
 
-export class GraphicSParams{
-    constructor(settings, sGraphics){
+export class GraphicSParams {
+    constructor(settings, sGraphics) {
         if (!Array.isArray(sGraphics) || !sGraphics[0].every(item => item instanceof GraphData)) {
             throw new TypeError("Ожидается GraphData");
         }
-        this.settings=settings;
-        this.graphics=sGraphics;
+        this.settings = settings;
+        this.graphics = sGraphics;
         this.initPlots();
     }
     async initPlots() {
@@ -63,13 +63,13 @@ export class GraphicSParams{
         xValues.push(v);
     }
         Plotly.update(
-        document.getElementById(graphData.divId),
-        { x: [xValues], y: [graphData.data] }, // x и y одновременно
-        {
-            'xaxis.range': [minF, maxF],
-            'yaxis.range': [graphData.bottom, graphData.top]
-        }
-    );
+            document.getElementById(graphData.divId),
+            { x: [xValues], y: [graphData.data] }, // x и y одновременно
+            {
+                'xaxis.range': [minF, maxF],
+                'yaxis.range': [graphData.bottom, graphData.top]
+            }
+        );
     }
 
     updateScales(){
