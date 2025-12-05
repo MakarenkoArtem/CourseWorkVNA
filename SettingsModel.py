@@ -1,6 +1,3 @@
-from flask import jsonify
-
-
 def get_nested_attr(obj, attr):
     """Retrieve a nested attribute from an object."""
     for part in attr.split('.'):
@@ -18,22 +15,20 @@ def cpyData(obj, source, mapp):
 
 
 class SettingsModel:
-    id = -1
-    author_id = -1
-    freq_start_mhz = 100
-    freq_stop_mhz = 1000
-    num_freq_points = 100
-    rbw_khz = 1
-    output_power_dbm = -3
-    txtr = 3
-    mode = 0
-    calib_HH = 1
-    calib_KZ = 1
-    calib_Match = 1
-    calib_Bolt = 1
-
     def __init__(self, author_id=-1):
+        self.id = -1
         self.author_id = author_id
+        self.freq_start_mhz = 100
+        self.freq_stop_mhz = 1000
+        self.num_freq_points = 100
+        self.rbw_khz = 1
+        self.output_power_dbm = -3
+        self.txtr = 3
+        self.mode = 0
+        self.calib_HH = 1
+        self.calib_KZ = 1
+        self.calib_Match = 1
+        self.calib_Bolt = 1
 
     def fromDB(self, dbSettings):
         mapp = {'id': 'id', 'author_id': 'author_id', 'freq_start_mhz': 'freq_start_mhz',
@@ -58,5 +53,5 @@ class SettingsModel:
         cpyData(dbSettings, self, mapp)
         return dbSettings
 
-    def toJSON(self):
-        return jsonify(self.__dict__)
+    def toDict(self):
+        return self.__dict__

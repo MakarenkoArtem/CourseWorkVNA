@@ -19,7 +19,7 @@
 </head>
 <body>
 <nav class="navbar navbar-dark bg-primary"
-     style="display: flex;justify-content: space-between; align-items: center; padding: 10px 15px;">
+     style="display: flex;justify-content: space-between; align-items: center; padding: 10px 15px; min-height: 75px">
     {% if id!=null and id > 0 %}
         <a href="/settings">
             <button id="btn-settings" style="margin-left:15px" class="btn btn-primary">
@@ -43,7 +43,7 @@
                 <li class="dropdown-header">Уроки</li-->
             </ul>
         </div>
-    {% else %}
+    {% elif id!=-247 %}
         <a></a>
         <a align="right" href="/">
             <button align="right" class="btn btn-primary" type="button"

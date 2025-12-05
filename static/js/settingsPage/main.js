@@ -1,8 +1,5 @@
 import {Client} from '../Client.js'
-import {GraphicSParams} from './GraphicSParams.js'
-import {GraphData} from './GraphData.js'
-import {Response} from './Response.js'
-import {SettingsVNA} from './SettingsVNA.js'
+import {SettingsVNA} from '../SettingsVNA.js'
 
 
 function formatTime(time) {
@@ -32,6 +29,32 @@ function updateBar(time){
     }
 }
 
+function updateButtons(settings) {
+    // Маппинг ID кнопок к соответствующим ключам в объекте settings
+    const buttonsMap = {
+        'HH': 'calib_HH',
+        'KZ': 'calib_KZ',
+        'Match': 'calib_Match',
+        'Bolt': 'calib_Bolt'
+    };
+
+    for (const [buttonId, settingKey] of Object.entries(buttonsMap)) {
+        let button = document.getElementById(buttonId);
+        if (button) { // Проверяем, существует ли кнопка
+            console.log(`Checking ${settingKey}: ${settings[settingKey]}`);
+            let newVal = settings[settingKey] == 1 ? 'btn btn-danger' : 'btn btn-primary';
+            // Устанавливаем класс кнопки в зависимости от значения настройки
+            if (button.className != newVal){
+                button.className = newVal;
+                let loader = document.getElementById(`loader-${buttonId}`);
+                loader.style.display = 'none'
+            }
+        } else {
+            console.error(`Button with ID ${buttonId} not found`);
+        }
+    }
+}
+
 const settings = new SettingsVNA();
 let client = new Client(`http://${location.hostname}:${location.port}`,settings);
 async function loop() {
@@ -42,9 +65,9 @@ async function loop() {
             updateBar(time)
             console.log(await client.getSettings());
             let isChanged = settings.update(await client.getSettings())
+            updateButtons(await client.getSettings())
             if (isChanged){
                 console.debug("Update settings: ", settings)
-                graphics.updateScales()
             }
             let data = await client.getSParams()
             await client.delay()
@@ -56,3 +79,18 @@ async function loop() {
 }
 
 loop();
+
+
+async function calibration(buttonId){
+    const loader = document.getElementById(`loader-${buttonId}`);
+    const buttonText = document.getElementById(`text-${buttonId}`);
+    loader.style.display = 'inline-block'; // Показать спиннер
+
+    try {
+        const result = await client.getJSON(`/${buttonId}`)
+        console.log(`Response from /${buttonId}:`, result);
+    } catch (error) {
+        console.error("Error sending request to /HH:", error);
+    }
+}
+window.calibration = calibration;

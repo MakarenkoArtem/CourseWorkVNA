@@ -17,23 +17,23 @@
     <div>
         <h4>Калибровки</h4>
         <div class="mb-3 d-flex justify-content-between">
-            <button class="btn btn-primary" id="button-1" type="button" onclick="toggleSpinner(1)">
-                <span class="spinner-grow spinner-grow-sm" role="status" aria-hidden="true" id="loader-1"
+            <button class="btn btn-primary" id="HH" onclick="calibration('HH')" type="button">
+                <span class="spinner-grow spinner-grow-sm" role="status" aria-hidden="true" id="loader-HH"
                       style="display: none;"></span>
                 ХХ
             </button>
-            <button class="btn btn-primary" id="button-2" type="button" onclick="toggleSpinner(2)">
-                <span class="spinner-grow spinner-grow-sm" role="status" aria-hidden="true" id="loader-2"
+            <button class="btn btn-primary" id="KZ" type="button" onclick="calibration('KZ')">
+                <span class="spinner-grow spinner-grow-sm" role="status" aria-hidden="true" id="loader-KZ"
                       style="display: none;"></span>
                 КЗ
             </button>
-            <button class="btn btn-primary" id="button-3" type="button" onclick="toggleSpinner(3)">
-                <span class="spinner-grow spinner-grow-sm" role="status" aria-hidden="true" id="loader-3"
+            <button class="btn btn-primary" id="Match" type="button" onclick="calibration('Match')">
+                <span class="spinner-grow spinner-grow-sm" role="status" aria-hidden="true" id="loader-Match"
                       style="display: none;"></span>
                 Нагрузка
             </button>
-            <button class="btn btn-primary" id="button-4" type="button" onclick="toggleSpinner(4)">
-                <span class="spinner-grow spinner-grow-sm" role="status" aria-hidden="true" id="loader-4"
+            <button class="btn btn-primary" id="Bolt" type="button" onclick="calibration('Bolt')">
+                <span class="spinner-grow spinner-grow-sm" role="status" aria-hidden="true" id="loader-Bolt"
                       style="display: none;"></span>
                 Болт
             </button>
@@ -93,21 +93,6 @@
     <a href="/main" style="float: left;" class="btn btn-danger">Назад</a>
     <p align="right">{{ form.measure(class="btn btn-primary")}}</p>
 </form>
-<script type="module" src="/static/js/settingsPage/main.js"></script>
-<script>
-    function toggleSpinner(buttonId) {
-        const loader = document.getElementById(`loader-${buttonId}`);
-        const buttonText = document.getElementById(`text-${buttonId}`);
+<script type="module" src="/static/js/settingsPage/main.js" defer></script>
 
-        // Проверяем текущее состояние спиннера
-        if (loader.style.display === 'none' || loader.style.display === '') {
-            loader.style.display = 'inline-block'; // Показать спиннер
-            // Имитация задержки ответа (3 секунды)
-            setTimeout(() => {
-                console.log('Запрос завершен для кнопки', buttonId);
-                loader.style.display = 'none'; // Скрыть спиннер после завершения
-            }, 3000);
-        }
-    }
-</script>
 {% endblock %}
