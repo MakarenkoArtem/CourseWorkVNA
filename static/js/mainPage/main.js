@@ -1,17 +1,13 @@
-import { Client } from './Client.js'
-import { GraphicSParams } from './GraphicSParams.js'
-import { GraphData } from './GraphData.js'
-import { SettingsVNA } from './SettingsVNA.js'
+import {Client} from '../Client.js'
+import {Response} from '../Response.js'
+import {SettingsVNA} from '../SettingsVNA.js'
+import {GraphicSParams} from './GraphicSParams.js'
+import {GraphData} from './GraphData.js'
 
 // --- ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ---
-let timeOut = 100; // ← исправляет ReferenceError
 const settings = new SettingsVNA();
-let client = new Client(`http://${location.hostname}:${location.port}`, settings);
+let client = new Client(`http://${location.hostname}:${location.port}`,settings);
 
-// --- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ---
-function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-}
 
 function formatTime(time) {
     const formattedMinutes = String(Math.floor(time / 60)).padStart(2, '0');
@@ -19,53 +15,48 @@ function formatTime(time) {
     return `${formattedMinutes}:${formattedSeconds}`;
 }
 
-function updateBar(time) {
-    try {
-        let btn = document.getElementById("btn-settings");
-        if (time > -1) {
-            document.getElementById("settingsIcon").src = "/src/control.png";
-            let text = 'Устройство доступно';
-            if (time > 0) {
-                text = formatTime(time);
+function updateBar(time){
+    try{
+        let btn = document.getElementById("btn-settings")
+        if(time>-1){
+            document.getElementById("settingsIcon").src = "/static/img/control.png"
+            let text='Устройсво доступно';
+            if (time>0){
+                text=formatTime(time)
             }
             document.getElementById("btn-settings-text").textContent = text;
             btn.onclick = () => window.location.href = "/settings";
-        } else {
-            document.getElementById("settingsIcon").src = "/src/disconnect.png";
-            document.getElementById("btn-settings-text").textContent = 'Управление у другого пользователя';
+        }else{
+            document.getElementById("settingsIcon").src = "/static/img/disconnect.png"
+            document.getElementById("btn-settings-text").textContent = 'Управление у другого пользователя'
             btn.onclick = () => null;
         }
-    } catch (error) {
-        console.debug(error);
+    }catch(error){
+        console.debug(error)
     }
 }
 
 // --- ОСНОВНОЙ ЦИКЛ ЗАГРУЗКИ ДАННЫХ ---
 async function loop() {
     let graphics = new GraphicSParams(settings,
-        [[new GraphData("S11", "S11"), new GraphData("S12", "S12")],
-        [new GraphData("S21", "S21"), new GraphData("S22", "S22")]]
-    );
-    while (1) {
-        try {
-            let time = (await client.getJSON("/api/time_user")).remainingTime;
-            timeOut = 5000;
-            console.log("TIME:", time);
-            updateBar(time);
-            let change = settings.update(await client.getSettings());
-            if (change) {
-                console.debug("Update settings: ", settings);
-                graphics.updateScales();
+                                      [[new GraphData("S11", "S11"), new GraphData("S12", "S12")],
+                                      [new GraphData("S21", "S21"), new GraphData("S22", "S22")]]);
+    while (1){
+        try{
+            let time = await client.getRemainingTime()
+            console.log("TIME:", time)
+            updateBar(time)
+            let isChanged = settings.update(await client.getSettings())
+            if (isChanged){
+                console.debug("Update settings: ", settings)
+                graphics.updateScales()
             }
-            let data = await client.getSParams();
-            graphics.takeResponse(data);
-            await sleep(timeOut);
-            console.debug("restart");
-        } catch (error) {
-            console.log("Timeout:", timeOut);
-            console.error(error);
-            await sleep(timeOut);
-            timeOut = Math.min(30000, timeOut * 2);
+            let data = await client.getSParams()
+            graphics.takeResponse(data)
+            await client.delay()
+        }catch(error){
+            console.error(error)
+            await client.delay(10000);
         }
     }
 }

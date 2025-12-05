@@ -1,5 +1,5 @@
-import { GraphData } from './GraphData.js'
-import { Response } from './Response..js'
+import {GraphData} from './GraphData.js'
+import {Response} from '../Response.js'
 
 function range(start, end, step = 1) {
     return Array.from({ length: Math.ceil((end - start) / step) }, (_, i) => start + i * step);
@@ -36,14 +36,14 @@ export class GraphicSParams {
         }
     }
 
-    changeScale(graphData) {
+    changeScale(graphData){
         if (!(graphData instanceof GraphData)) {
             throw new TypeError("Ожидается GraphData");
         }
 
         var layout = {
-            x: range(graphData.start, graphData.finish, (graphData.finish - graphData.start) / graphData.data.lenght),
-            y: { range: [graphData.bottom, graphData.top] },
+            x: range(graphData.start, graphData.finish, (graphData.finish-graphData.start)/graphData.data.lenght),
+            y: {range: [graphData.bottom, graphData.top]},
             type: 'scatter'
         };
         Plotly.relayout(document.getElementById(graphData.divId), {
@@ -52,16 +52,16 @@ export class GraphicSParams {
         });
     }
 
-    updateScale(graphData) {
-        console.log(this.settings)
-        const minF = this.settings.minFrequency
-        const maxF = this.settings.maxFrequency
-        const countPoints = this.settings.countPoints
-        const step = (maxF - minF) / (countPoints - 1);
-        const xValues = [];
-        for (let v = minF; v <= maxF; v += step) {
-            xValues.push(v);
-        }
+    updateScale(graphData){
+    console.log(this.settings)
+    const minF =this.settings.minFrequency
+    const maxF = this.settings.maxFrequency
+    const countPoints = this.settings.countPoints
+    const step = (maxF - minF) / (countPoints-1);
+    const xValues = [];
+    for(let v = minF; v <= maxF; v += step){
+        xValues.push(v);
+    }
         Plotly.update(
             document.getElementById(graphData.divId),
             { x: [xValues], y: [graphData.data] }, // x и y одновременно
@@ -72,29 +72,28 @@ export class GraphicSParams {
         );
     }
 
-    updateScales() {
+    updateScales(){
         this.updateScale(this.graphics[0][0]);
         this.updateScale(this.graphics[0][1]);
         this.updateScale(this.graphics[1][0]);
         this.updateScale(this.graphics[1][1]);
     }
-    takeResponse(resp) {
-        // Убираем строгую проверку типа
-        if (!resp || !resp.sParams || !Array.isArray(resp.sParams)) {
-            throw new TypeError("Неверный формат данных");
+   takeResponse(resp){
+        if (!(resp instanceof Response)) {
+            throw new TypeError("Ожидается Response");
         }
 
-        this.graphics[0][0].data = resp.sParams[0][0];
-        this.graphics[0][1].data = resp.sParams[0][1];
-        this.graphics[1][0].data = resp.sParams[1][0];
-        this.graphics[1][1].data = resp.sParams[1][1];
+        this.graphics[0][0].data=resp.sParams[0][0];
+        this.graphics[0][1].data=resp.sParams[0][1];
+        this.graphics[1][0].data=resp.sParams[1][0];
+        this.graphics[1][1].data=resp.sParams[1][1];
         Plotly.update(this.graphics[0][0].divId,
-            { y: [this.graphics[0][0].data] }, {}, [0]);
+        {y: [this.graphics[0][0].data]}, {}, [0]);
         Plotly.update(this.graphics[0][1].divId,
-            { y: [this.graphics[0][1].data] }, {}, [0]);
+        {y: [this.graphics[0][1].data]}, {}, [0]);
         Plotly.update(this.graphics[1][0].divId,
-            { y: [this.graphics[1][0].data] }, {}, [0]);
+        {y: [this.graphics[1][0].data]}, {}, [0]);
         Plotly.update(this.graphics[1][1].divId,
-            { y: [this.graphics[1][1].data] }, {}, [0]);
-    }
+        {y: [this.graphics[1][1].data]}, {}, [0]);
+   }
 }

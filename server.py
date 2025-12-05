@@ -12,6 +12,7 @@ from werkzeug.security import check_password_hash
 
 import emulator
 import processing
+from SettingsModel import SettingsModel
 from data import db_session
 from data.settings import Setting
 from data.users import User
@@ -19,8 +20,7 @@ from forms.measure import MeasureForm
 from forms.user import RegisterForm, EntryForm
 
 activeSession = {}
-SETTINGS = Setting(id=0, author_id=0, freq_start_mhz=1000, freq_stop_mhz=10000, num_freq_points=101, rbw_khz=2,
-                   output_power_dbm=-3, txtr=3, mode=0).to_dict()
+SETTINGS = SettingsModel()
 events = Queue()
 app = Flask(
     __name__,
@@ -58,22 +58,22 @@ def home(idMeasure=None):
 
 def fillSettingsForm(form, settings):
     if settings is not None:
-        form.minFreq.data = settings.freq_start_mhz
-        form.maxFreq.data = settings.freq_stop_mhz
-        form.pointCnt.data = settings.num_freq_points
-        form.rbw.data = settings.rbw_khz
-        form.dbm.data = settings.output_power_dbm
+        form.freq_start_mhz.data = settings.freq_start_mhz
+        form.freq_stop_mhz.data = settings.freq_stop_mhz
+        form.num_freq_points.data = settings.num_freq_points
+        form.rbw_khz.data = settings.rbw_khz
+        form.output_power_dbm.data = settings.output_power_dbm
         form.txtr.data = settings.txtr
         form.mode.data = settings.mode
     return form
 
 
 def to_Settings(form, settings):
-    settings.freq_start_mhz = form.minFreq.data
-    settings.freq_stop_mhz = form.maxFreq.data
-    settings.num_freq_points = form.pointCnt.data
-    settings.rbw_khz = form.rbw.data
-    settings.output_power_dbm = form.dbm.data
+    settings.freq_start_mhz = form.freq_start_mhz.data
+    settings.freq_stop_mhz = form.freq_stop_mhz.data
+    settings.num_freq_points = form.num_freq_points.data
+    settings.rbw_khz = form.rbw_khz.data
+    settings.output_power_dbm = form.output_power_dbm.data
     settings.txtr = int(form.txtr.data)
     settings.mode = int(form.mode.data)
     return settings
@@ -105,19 +105,18 @@ def settings():  # форма для регистрации
         settings = Setting(author_id=current_user.id)
         db_sess.add(settings)
     if form.validate_on_submit():
-        settings = to_Settings(form, settings)
-        settDict = settings.to_dict()
+        newSettings = SettingsModel().fromForm(form)
         db_sess.commit()
         if 'measure' in request.form:
             if activeSession['user'] == current_user.id:
-                SETTINGS = settDict
+                SETTINGS = newSettings
+                print(SETTINGS.__dict__)
                 background_loop.call_soon_threadsafe(
                     asyncio.create_task, newData(emulator.generate_vna_data, emulator.RecordingSettings(
-                        freq_range=emulator.FrequencyRange(settDict['freq_start_mhz'], settDict['freq_stop_mhz'],
-                                                           settDict['num_freq_points']),
-                        rbw_khz=settDict['rbw_khz'], output_power_dbm=settDict['output_power_dbm'],
-                        txtr=settDict['txtr'],
-                        mode=settDict['mode'])))
+                        freq_range=emulator.FrequencyRange(SETTINGS.freq_start_mhz, SETTINGS.freq_stop_mhz,
+                                                           SETTINGS.num_freq_points),
+                        rbw_khz=SETTINGS.rbw_khz, output_power_dbm=SETTINGS.output_power_dbm, txtr=SETTINGS.txtr,
+                        mode=SETTINGS.mode)))
                 db_sess.close()
             return redirect(f'/main')
         elif 'calibrate' in request.form:
@@ -128,44 +127,32 @@ def settings():  # форма для регистрации
     return render_template('settingsPage.html', form=form, name=current_user.email, id=current_user.id)
 
 
-# === ИНИЦИАЛИЗАЦИЯ DATA ДЛЯ БЕЗОПАСНОГО ИСПОЛЬЗОВАНИЯ ===
-from dataclasses import dataclass
-
-@dataclass
-class DataStub:
-    S11: list = None
-    S12: list = None
-    S21: list = None
-    S22: list = None
-
-DATA = DataStub()
-DATA.S11 = [0.0] * 101
-DATA.S12 = [0.0] * 101
-DATA.S21 = [0.0] * 101
-DATA.S22 = [0.0] * 101
-
+DATA = None
 
 async def newData(func, *args):
-    global DATA
-    DATA = processing.get_uncalibrated_s(func(*args))
-    DATA.S11 = list(map(abs, DATA.S11))
-    DATA.S12 = list(map(abs, DATA.S12))
-    DATA.S21 = list(map(abs, DATA.S21))
-    DATA.S22 = list(map(abs, DATA.S22))
-    print("!!!!", DATA.__dict__)
+    global DATA, activeSession
+    while activeSession != {}:
+        DATA = processing.get_uncalibrated_s(func(*args))
+        DATA.S11 = list(map(abs, DATA.S11))
+        DATA.S12 = list(map(abs, DATA.S12))
+        DATA.S21 = list(map(abs, DATA.S21))
+        DATA.S22 = list(map(abs, DATA.S22))
+        print("!!!!", DATA.__dict__)
 
 
 # ------------------------  API LOGIC  ---------------------------
 @app.get("/api/get_data")
 def get_data():
     global DATA
+    if DATA is None:
+        return {}
     return jsonify(DATA.__dict__)
 
 
 @app.get("/api/time_user")
 def cur_user():
     global activeSession
-    if activeSession =={} or current_user is None:
+    if activeSession == {} or current_user is None:
         return jsonify({"remainingTime": 0})  # если remainingTime 0 устройство свободно, если -1 у другого пользователя
     delta = (activeSession['time'] - datetime.datetime.now()).total_seconds() // 60
     if delta < 0:
@@ -176,17 +163,10 @@ def cur_user():
     return jsonify({"remainingTime": delta})
 
 
-@app.get("/api/getSparams")
-def get_Sparams():
-    global SETTINGS
-    return jsonify(SETTINGS)
-
-
 @app.get("/api/settings")
 def get_settings():
     global SETTINGS
-    print(SETTINGS)
-    return jsonify(SETTINGS)
+    return SETTINGS.toJSON()
 
 
 @app.get("/api/userSettings")
@@ -229,7 +209,8 @@ def register():  # форма для регистрации
         user = User(email=form.email.data)
         user.set_password(form.password.data)
         db_sess.add(user)
-        curUser = db_sess.query(User).filter(User.email == form.email.data and check_password_hash(User.hashed_password, form.password.data)).first()
+        curUser = db_sess.query(User).filter(
+            User.email == form.email.data and check_password_hash(User.hashed_password, form.password.data)).first()
         if curUser is not None:
             login_user(curUser, remember=True)
         db_sess.commit()
@@ -248,7 +229,8 @@ def login():  # форма для входа
     form = EntryForm()
     if form.validate_on_submit():
         db_sess = db_session.create_session()
-        curUser = db_sess.query(User).filter(User.email == form.email.data and check_password_hash(User.hashed_password, form.password.data)).first()
+        curUser = db_sess.query(User).filter(
+            User.email == form.email.data and check_password_hash(User.hashed_password, form.password.data)).first()
         if curUser is None:
             db_sess.close()
             return render_template('login.html', form=form, message="Такой пользователь не найден")

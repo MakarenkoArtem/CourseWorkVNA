@@ -41,37 +41,37 @@
     </div>
     {{ form.hidden_tag() }}
     <p style="margin-bottom: 0px;">
-        {{ form.minFreq.label(style="margin-bottom: 5px;") }}<br>
-        {{ form.minFreq(class="form-control", type="number") }}<br>
-        {% for error in form.minFreq.errors %}
+        {{ form.freq_start_mhz.label(style="margin-bottom: 5px;") }}<br>
+        {{ form.freq_start_mhz(class="form-control", type="number") }}<br>
+        {% for error in form.freq_start_mhz.errors %}
     <p class="alert alert-danger" role="alert">{{ error }}</p>
     {% endfor %}
     </p>
     <p style="margin-bottom: 0px;">
-        {{ form.maxFreq.label(style="margin-bottom: 5px;") }}<br>
-        {{ form.maxFreq(class="form-control", type="number") }}<br>
-        {% for error in form.maxFreq.errors %}
+        {{ form.freq_stop_mhz.label(style="margin-bottom: 5px;") }}<br>
+        {{ form.freq_stop_mhz(class="form-control", type="number") }}<br>
+        {% for error in form.freq_stop_mhz.errors %}
     <p class="alert alert-danger" role="alert">{{ error }}</p>
     {% endfor %}
     </p>
     <p style="margin-bottom: 0px;">
-        {{ form.pointCnt.label(style="margin-bottom: 5px;") }}<br>
-        {{ form.pointCnt(class="form-control", type="number") }}<br>
-        {% for error in form.pointCnt.errors %}
+        {{ form.num_freq_points.label(style="margin-bottom: 5px;") }}<br>
+        {{ form.num_freq_points(class="form-control", type="number") }}<br>
+        {% for error in form.num_freq_points.errors %}
     <p class="alert alert-danger" role="alert">{{ error }}</p>
     {% endfor %}
     </p>
     <p style="margin-bottom: 0px;">
-        {{ form.rbw.label(style="margin-bottom: 5px;") }}<br>
-        {{ form.rbw(class="form-control") }}<br>
-        {% for error in form.rbw.errors %}
+        {{ form.rbw_khz.label(style="margin-bottom: 5px;") }}<br>
+        {{ form.rbw_khz(class="form-control") }}<br>
+        {% for error in form.rbw_khz.errors %}
     <p class="alert alert-danger" role="alert">{{ error }}</p>
     {% endfor %}
     </p>
     <p style="margin-bottom: 0px;">
-        {{ form.dbm.label(style="margin-bottom: 5px;") }}<br>
-        {{ form.dbm(class="form-control") }}<br>
-        {% for error in form.dbm.errors %}
+        {{ form.output_power_dbm.label(style="margin-bottom: 5px;") }}<br>
+        {{ form.output_power_dbm(class="form-control") }}<br>
+        {% for error in form.output_power_dbm.errors %}
     <p class="alert alert-danger" role="alert">{{ error }}</p>
     {% endfor %}
     </p>
