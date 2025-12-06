@@ -14,7 +14,7 @@
 </style>
 <form action="" method="post" enctype="multipart/form-data">
     <h2 class="mb-3 text-center">Настройки ВАЦ</h2>
-    <div>
+    <!--div>
         <h4>Калибровки</h4>
         <div class="mb-3 d-flex justify-content-between">
             <button class="btn btn-primary" id="HH" onclick="calibration('HH')" type="button">
@@ -38,7 +38,7 @@
                 Болт
             </button>
         </div>
-    </div>
+    </div-->
     {{ form.hidden_tag() }}
     <p style="margin-bottom: 0px;">
         {{ form.freq_start_mhz.label(style="margin-bottom: 5px;") }}<br>
@@ -94,5 +94,8 @@
     <p align="right">{{ form.measure(class="btn btn-primary")}}</p>
 </form>
 <script type="module" src="/static/js/settingsPage/main.js" defer></script>
+{% endblock %}
 
+{% block calibration %}
+    {% include 'calibration.html' %}
 {% endblock %}

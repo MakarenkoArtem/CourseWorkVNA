@@ -271,6 +271,8 @@ def load_user(user_id):
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():  # форма для регистрации
+    if current_user is not None:  # устройство занято другим пользователем
+        return redirect("/main")
     form = RegisterForm()
     if form.validate_on_submit():
         if not form.passIsCorrect():
@@ -293,11 +295,15 @@ def register():  # форма для регистрации
 
 @app.route('/')
 def choice():  # выбор входа или регистрации
+    if current_user is not None:  # устройство занято другим пользователем
+        return redirect("/main")
     return render_template("choice.html", id=-247)
 
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():  # форма для входа
+    if current_user is not None:  # устройство занято другим пользователем
+        return redirect("/main")
     form = EntryForm()
     if form.validate_on_submit():
         db_sess = db_session.create_session()

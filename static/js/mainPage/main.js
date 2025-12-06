@@ -3,6 +3,7 @@ import {Response} from '../Response.js'
 import {SettingsVNA} from '../SettingsVNA.js'
 import {GraphicSParams} from './GraphicSParams.js'
 import {GraphData} from './GraphData.js'
+import {updateButtons, calibration} from '../calibButtons.js'
 
 // --- ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ---
 const settings = new SettingsVNA();
@@ -47,6 +48,7 @@ async function loop() {
             console.log("TIME:", time)
             updateBar(time)
             let isChanged = settings.update(await client.getSettings())
+            updateButtons(await client.getSettings())
             if (isChanged){
                 console.debug("Update settings: ", settings)
                 graphics.updateScales()
@@ -63,6 +65,8 @@ async function loop() {
 
 // --- ЗАПУСК ЦИКЛА ---
 loop();
+window.client = client;
+window.calibration = calibration;
 
 // === ОБРАБОТЧИК ПКМ ДЛЯ ВСЕХ ГРАФИКОВ ===
 function attachContextMenuToGraphs() {
