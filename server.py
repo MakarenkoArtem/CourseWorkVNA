@@ -1,4 +1,5 @@
 import os
+import subprocess
 import time
 from datetime import datetime, timedelta
 from threading import Thread
@@ -329,10 +330,13 @@ def logout():
 
 
 def main():
+    port = 8000
+    result = subprocess.run(['hostname', '-I'], capture_output=True, text=True)
+    print("IP адреса:", *[f'\nhttp://{i}:{port}' for i in result.stdout.strip().split()])
     db_session.global_init("db/VNAData.db")
     VNAThread = Thread(target=VNAWorker, args=(EVENTS,), daemon=True)
     VNAThread.start()
-    app.run(host="0.0.0.0", port=8000, debug=True, use_reloader=False)
+    app.run(host="0.0.0.0", port=port, debug=True, use_reloader=False)
 
 
 if __name__ == "__main__":
