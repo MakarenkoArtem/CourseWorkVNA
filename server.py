@@ -192,7 +192,7 @@ def get_data():
 @app.get("/api/time_user")
 def cur_user():
     global activeSession
-    if activeSession == {} or current_user is None:
+    if activeSession == {} or current_user.is_anonymous:
         return jsonify({"remainingTime": 0})  # если remainingTime 0 устройство свободно, если -1 у другого пользователя
     delta = ((activeSession['time'] - datetime.now()).total_seconds() + 59) // 60
     if delta < 0:
@@ -271,7 +271,7 @@ def load_user(user_id):
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():  # форма для регистрации
-    if current_user is not None:  # устройство занято другим пользователем
+    if current_user.is_authenticated:  # устройство занято другим пользователем
         return redirect("/main")
     form = RegisterForm()
     if form.validate_on_submit():
@@ -295,14 +295,14 @@ def register():  # форма для регистрации
 
 @app.route('/')
 def choice():  # выбор входа или регистрации
-    if current_user is not None:  # устройство занято другим пользователем
+    if current_user.is_authenticated:  # устройство занято другим пользователем
         return redirect("/main")
     return render_template("choice.html", id=-247)
 
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():  # форма для входа
-    if current_user is not None:  # устройство занято другим пользователем
+    if current_user.is_authenticated:  # устройство занято другим пользователем
         return redirect("/main")
     form = EntryForm()
     if form.validate_on_submit():
