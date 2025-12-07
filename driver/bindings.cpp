@@ -1,27 +1,14 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
-#include <vector>
-
-// Убираем pybind11/numpy.h для совместимости
-// Вместо этого возвращаем std::vector<std::vector<double>>
+#include <pybind11/complex.h>  // Для std::complex<double>
 #include "VNAKitDevice.h"
 
 namespace py = pybind11;
 
-// Конвертация вектора комплексных чисел в вектор пар [real, imag]
-std::vector<std::vector<double>> complex_vector_to_list(const std::vector<VNAKit_Complex>& vec) {
-    std::vector<std::vector<double>> result;
-    result.reserve(vec.size());
-    for (const auto& c : vec) {
-        result.push_back({c.real, c.imag});
-    }
-    return result;
-}
-
 PYBIND11_MODULE(vnakit_py, m) {
     m.doc() = "Python bindings for VNAKitDevice";
 
-    // === Экспорт всех структур ===
+    // === Экспорт всех структур VNAKit (без изменений) ===
 
     py::class_<VNAKit_Complex>(m, "Complex")
         .def(py::init<>())
@@ -70,26 +57,18 @@ PYBIND11_MODULE(vnakit_py, m) {
         .def_readwrite("n_rx_tr", &VNAKit_RecordingResult::nRxTr)
         .def_readwrite("n_frequencies_measured", &VNAKit_RecordingResult::nFrequenciesMeasured);
 
-    // === Measurement: возвращаем списки вместо numpy ===
-    py::class_<Measurement>(m, "Measurement")
+    // === НОВАЯ СТРУКТУРА: VNAData ===
+    py::class_<VNAData>(m, "VNAData")
         .def(py::init<>())
-        .def_property_readonly("a0", [](const Measurement& self) {
-            return complex_vector_to_list(self.a0);
-        })
-        .def_property_readonly("a3", [](const Measurement& self) {
-            return complex_vector_to_list(self.a3);
-        })
-        .def_property_readonly("b0", [](const Measurement& self) {
-            return complex_vector_to_list(self.b0);
-        })
-        .def_property_readonly("b3", [](const Measurement& self) {
-            return complex_vector_to_list(self.b3);
-        })
-        .def_readonly("start_freq", &Measurement::startFreq)
-        .def_readonly("stop_freq", &Measurement::stopFreq)
-        .def_readonly("mode", &Measurement::mode);
+        .def_readonly("frequency", &VNAData::frequency)
+        .def_readonly("a0", &VNAData::a0)
+        .def_readonly("a3", &VNAData::a3)
+        .def_readonly("b0_3", &VNAData::b0_3)
+        .def_readonly("b0_6", &VNAData::b0_6)
+        .def_readonly("b3_3", &VNAData::b3_3)
+        .def_readonly("b3_6", &VNAData::b3_6);
 
-    // === Основной класс ===
+    // === Основной класс: VNAKitDevice ===
     py::class_<VNAKitDevice>(m, "VNAKitDevice")
         .def(py::init<const std::string&>(), py::arg("config_path"))
         .def("init", &VNAKitDevice::init,
@@ -107,8 +86,12 @@ PYBIND11_MODULE(vnakit_py, m) {
              py::call_guard<py::gil_scoped_release>())
         .def("frequency_limits", &VNAKitDevice::frequencyLimits)
         .def("power_limits", &VNAKitDevice::powerLimits)
-        .def_static("last_error", &VNAKitDevice::lastError);
+        // Обратите внимание: lastError теперь НЕ статический и требует аргумент!
+        .def_static("last_error", [](VNAKIT_RESULT result) {
+            return VNAKitDevice::lastError(result);
+        });
 
+    // Обработка исключений
     py::register_exception_translator([](std::exception_ptr p) {
         try {
             if (p) std::rethrow_exception(p);

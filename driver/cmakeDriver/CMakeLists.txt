@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # =============== НАСТРОЙКИ PYBIND11 ===============
-# Найти pybind11 (установленный через pip или системно)
+# Найти pybind11
 set(pybind11_DIR "/usr/lib/python3/dist-packages/pybind11/share/cmake/pybind11")
 find_package(pybind11 REQUIRED)
 
@@ -13,15 +13,15 @@ find_package(pybind11 REQUIRED)
 # Указываем, что libVNAKit.so — импортированная разделяемая библиотека
 add_library(VNAKit SHARED IMPORTED)
 set_target_properties(VNAKit PROPERTIES
-        IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/libVNAKit.so"
+        IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/../libVNAKit.so"
         INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}"
 )
 
 # =============== СОЗДАНИЕ PYTHON-МОДУЛЯ ===============
 # Создаём модуль для Python (вместо исполняемого файла)
 pybind11_add_module(vnakit_py
-        bindings.cpp      # Ваш файл с биндингами
-        VNAKitDevice.cpp  # Реализация вашего класса
+        ../bindings.cpp      # Ваш файл с биндингами
+        ../VNAKitDevice.cpp  # Реализация вашего класса
 )
 
 # Линковка с VNAKit и настройка include-директорий
@@ -30,7 +30,7 @@ target_link_libraries(vnakit_py PRIVATE
 )
 
 target_include_directories(vnakit_py PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}  # Для заголовков VNAKitDevice.h и VNAKit.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/.. # Для заголовков VNAKitDevice.h и VNAKit.h
 )
 
 # =============== НАСТРОЙКА RPATH ===============
@@ -44,12 +44,21 @@ set_target_properties(vnakit_py PROPERTIES
 # Это критично для запуска из Python!
 add_custom_command(TARGET vnakit_py POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        ${CMAKE_CURRENT_SOURCE_DIR}/libVNAKit.so
+        ${CMAKE_CURRENT_SOURCE_DIR}/../libVNAKit.so
         $<TARGET_FILE_DIR:vnakit_py>/
         COMMENT "Copying libVNAKit.so to output directory"
 )
+
+# =============== ГЕНЕРАЦИЯ .pyi ФАЙЛА ===============
+#[[add_custom_command(
+        TARGET vnakit_py POST_BUILD
+        COMMAND ${PYTHON_EXECUTABLE} -m pybind11_stubgen vnakit_py
+                --output-dir $<TARGET_FILE_DIR:vnakit_py>/
+        COMMENT "Generating .pyi file from compiled module"
+)]]
 
 # =============== ОПЦИОНАЛЬНО: УДАЛЕНИЕ СИМВОЛОВ ДЛЯ ПРОИЗВОДИТЕЛЬНОСТИ ===============
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     target_compile_options(vnakit_py PRIVATE -fvisibility=hidden)
 endif()
+# pybind11-stubgen ../build_driver/vn

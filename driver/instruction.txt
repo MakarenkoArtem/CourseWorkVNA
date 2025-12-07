@@ -1,0 +1,5 @@
+Чтобы скомпилить на примере driver с calib аналогично:
+build_driver$ cmake ../cmakeDriver
+make
+build_calib$ cmake ../cmakeCalib
+make

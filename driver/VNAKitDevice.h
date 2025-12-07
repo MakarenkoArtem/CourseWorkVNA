@@ -1,21 +1,22 @@
 #ifndef VNAKITDEVICE_H
 #define VNAKITDEVICE_H
 
-#include <iostream>
 #include "VNAKit.h"
 #include <vector>
 #include <string>
+#include <complex>
+#include <algorithm>
 #include <stdexcept>
 
 
-struct Measurement{
-    std::vector<VNAKit_Complex> a0;
-    std::vector<VNAKit_Complex> a3;
-    std::vector<VNAKit_Complex> b0;
-    std::vector<VNAKit_Complex> b3;
-    double startFreq;
-    double stopFreq;
-    int mode;
+struct VNAData {
+    std::vector<double> frequency;
+    std::vector<std::complex<double>> a0;  // Port 2
+    std::vector<std::complex<double>> a3;  // Port 5
+    std::vector<std::complex<double>> b0_3;  // Port 1 (transmission from 3)
+    std::vector<std::complex<double>> b0_6;  // Port 1 (transmission from 6)
+    std::vector<std::complex<double>> b3_3;  // Port 4 (transmission from 3)
+    std::vector<std::complex<double>> b3_6;  // Port 4 (transmission from 6)
 };
 
 class VNAKitDevice {
@@ -31,14 +32,18 @@ public:
     VNAKit_RecordingSettings& getSettings();
     void setSettings(const VNAKit_RecordingSettings s);
     std::vector<double> getFrequencyVectorMHz();
-    Measurement getResult();
+    VNAData getResult();
     VNAKit_FrequencyLimits frequencyLimits() const;
     VNAKit_PowerLimits powerLimits() const;
     static std::string lastError(VNAKIT_RESULT result);
-
 private:
     void check(VNAKIT_RESULT result, const std::string& where);
     void record();
+    void copyVNAComplexToComplexVector(
+        std::vector<std::complex<double>>& output,
+        const VNAKit_Complex* input,
+        size_t count
+        );
 };
 
 

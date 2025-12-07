@@ -1,6 +1,6 @@
-from driver.build.vnakit_py import *
+from VNADriver.driver.build.vnakit_py_previous import *
 
-dev = VNAKitDevice(config_path="./driver/vnakit.conf")
+dev = VNAKitDevice(config_path="driver/vnakit.conf")
 dev.init()
 set = RecordingSettings()
 set.freq_range = FrequencyRange()
