@@ -1,5 +1,5 @@
 #include "VNAKitDevice.h"
-
+#include <iostream>
 
 VNAKitDevice::VNAKitDevice(const std::string& path) {
 	check(VNAKit_SetConfigFile(path.c_str()), "SetConfigFile");
@@ -30,11 +30,7 @@ VNAKit_RecordingSettings& VNAKitDevice::getSettings(){
 }
 
 void VNAKitDevice::setSettings(const VNAKit_RecordingSettings s){
-  	if (settings.freqRange.freqStartMHz != s.freqRange.freqStartMHz && settings.freqRange.freqStopMHz != s.freqRange.freqStopMHz
-      && settings.freqRange.numFreqPoints != s.freqRange.numFreqPoints
-      && settings.rbw_khz != s.rbw_khz && settings.outputPower_dbm != s.outputPower_dbm
-      && settings.txtr != s.txtr && settings.mode != s.mode)
-    	settings = s;
+  	settings = s;
 }
 
 void VNAKitDevice::record() {
@@ -62,6 +58,9 @@ VNAData VNAKitDevice::getResult() {
     		copyVNAComplexToComplexVector(measurement.a0, result.resultBuffer[1], nFreqs);
             copyVNAComplexToComplexVector(measurement.b0_3, result.resultBuffer[0], nFreqs);
             copyVNAComplexToComplexVector(measurement.b3_3, result.resultBuffer[3], nFreqs);
+            measurement.a3.resize(nFreqs);
+            measurement.b3_6.resize(nFreqs);
+            measurement.b0_6.resize(nFreqs);
             std::fill(measurement.a3.begin(), measurement.a3.begin() + nFreqs, 1);
             std::fill(measurement.b3_6.begin(), measurement.b3_6.begin() + nFreqs, 1);
             std::fill(measurement.b0_6.begin(), measurement.b0_6.begin() + nFreqs, 1);
@@ -70,6 +69,9 @@ VNAData VNAKitDevice::getResult() {
           	copyVNAComplexToComplexVector(measurement.a3, result.resultBuffer[4], nFreqs);
     		copyVNAComplexToComplexVector(measurement.b0_6, result.resultBuffer[0], nFreqs);
             copyVNAComplexToComplexVector(measurement.b3_6, result.resultBuffer[3], nFreqs);
+            measurement.a0.resize(nFreqs);
+            measurement.b3_3.resize(nFreqs);
+            measurement.b0_3.resize(nFreqs);
             std::fill(measurement.a0.begin(), measurement.a3.begin() + nFreqs, 1);
             std::fill(measurement.b0_3.begin(), measurement.b0_3.begin() + nFreqs, 1);
             std::fill(measurement.b3_3.begin(), measurement.b3_3.begin() + nFreqs, 1);
@@ -82,6 +84,7 @@ VNAData VNAKitDevice::getResult() {
             copyVNAComplexToComplexVector(measurement.b3_3, result.resultBuffer[3], nFreqs);
 			currSettings.txtr = 6;
             setSettings(currSettings);
+            applySettings();
             record();
     		VNAKit_InitResultStructure(&result, nFreqs);
     		check(VNAKit_GetRecordingResult(&result), "GetRecordingResult");
@@ -95,6 +98,7 @@ VNAData VNAKitDevice::getResult() {
             copyVNAComplexToComplexVector(measurement.b3_6, result.resultBuffer[3], nFreqs);
             currSettings.txtr = 3;
             setSettings(currSettings);
+            applySettings();
             record();
     		VNAKit_InitResultStructure(&result, nFreqs);
     		check(VNAKit_GetRecordingResult(&result), "GetRecordingResult");

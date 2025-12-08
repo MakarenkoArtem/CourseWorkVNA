@@ -9,9 +9,9 @@ set.freq_range = FrequencyRange()
 set.freq_range.freq_start_mhz = 500
 set.freq_range.freq_stop_mhz = 6000
 set.freq_range.num_freq_points = 1001
-set.mode = 1
-set.output_power_dbm = -10
-set.rbw_khz = 2
+set.mode = 0
+set.output_power_dbm = -10.0
+set.rbw_khz = 10.0
 set.txtr = 3
 print(dev.set_settings(set))
 print(dev.validate_settings())

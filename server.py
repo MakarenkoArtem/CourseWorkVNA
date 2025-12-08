@@ -18,8 +18,20 @@ from data.settings import Setting
 from data.users import User
 from forms.measure import MeasureForm
 from forms.user import RegisterForm, EntryForm
+from driver.build.vnakit_py import *
 
+CalibrationVNA = VNACalibration()
+SETTINGS = SettingsModel()
 DATA = processing.Smatrixs(frequency=[], S11=[], S12=[], S21=[], S22=[])
+'''DATA.frequency=[]
+DATA.S11=[]
+DATA.S12=[]
+DATA.S21=[]
+DATA.S22=[]'''
+DeviceVNA = VNAKitDevice(config_path="driver/vnakit.conf")
+DeviceVNA.init()
+DeviceVNA.set_settings(SETTINGS.toRecordingSettings())
+DeviceVNA.apply_settings()
 
 
 def VNAWorker(events):
@@ -41,7 +53,6 @@ def VNAWorker(events):
 
 
 activeSession = {}
-SETTINGS = SettingsModel()
 EVENTS = []
 
 app = Flask(
@@ -121,11 +132,20 @@ def settings():  # форма для регистрации
         if 'measure' in request.form:
             if activeSession['user'] == current_user.id:
                 SETTINGS = newSettings
-                event = VNAEvent(func=lambda: getData(emulator.generate_vna_data, DATA, emulator.RecordingSettings(
+                event = VNAEvent(func=lambda: DeviceVNA.set_settings(SETTINGS.toRecordingSettings()), priority=1,
+                                 repeat=1)
+                EVENTS.append(event)
+                event = VNAEvent(func=lambda: DeviceVNA.apply_settings(), priority=1, repeat=1)
+                EVENTS.append(event)
+                '''event = VNAEvent(func=lambda: getData(emulator.generate_vna_data, DATA, emulator.RecordingSettings(
                     freq_range=emulator.FrequencyRange(SETTINGS.freq_start_mhz, SETTINGS.freq_stop_mhz,
                                                        SETTINGS.num_freq_points),
                     rbw_khz=SETTINGS.rbw_khz, output_power_dbm=SETTINGS.output_power_dbm, txtr=SETTINGS.txtr,
-                    mode=SETTINGS.mode)), timeEnd=datetime.now() + timedelta(minutes=5))
+                    mode=SETTINGS.mode)), timeEnd=datetime.now() + timedelta(minutes=5))'''
+
+                event = VNAEvent(
+                    func=lambda: getData(DeviceVNA.get_result, CalibrationVNA, DATA),
+                    timeEnd=datetime.now() + timedelta(minutes=5))
                 print("ADD EVENT:", event.__dict__)
                 EVENTS.append(event)
                 db_sess.close()
@@ -140,13 +160,37 @@ def calib(*args):
     return True
 
 
-def getData(func, DATA, *args):
-    newDATA = processing.get_uncalibrated_s(func(*args))
-    DATA.S11 = list(map(abs, newDATA.S11))
-    DATA.S12 = list(map(abs, newDATA.S12))
-    DATA.S21 = list(map(abs, newDATA.S21))
-    DATA.S22 = list(map(abs, newDATA.S22))
+def getNewData(func, CalibrationVNA, DATA, *args):
+    # newDATA = processing.get_uncalibrated_s(func(*args))
+    measurData = func(*args)
+    #sMatr = Smatrixs()
+    CalibrationVNA.load_measurement_data(measurData)
+    CalibrationVNA.calculate_uncalibrated_s()
+    CalibrationVNA.interpolate_standarts()
+    CalibrationVNA.calc_port_one_err()
+    CalibrationVNA.apply_port_one_err()
+    sMatr = CalibrationVNA.get_calibrated_s()
+    #CalibrationVNA.debug_check(247)
+    #DATA.frequency = sMatr.frequency
+    DATA.S11 = list(map(abs, sMatr.S11))
+    DATA.S12 = list(map(abs, sMatr.S11))
+    DATA.S21 = list(map(abs, sMatr.S11))
+    DATA.S22 = list(map(abs, sMatr.S11))
     print("NEW DATA:", DATA.__dict__)
+
+def getData(func, CalibrationVNA,DATA, *args):
+    # newDATA = processing.get_uncalibrated_s(func(*args))
+    measurData = func(*args)
+    sMatr = Smatrixs()
+    CalibrationVNA.load_measurement_data(measurData)
+    CalibrationVNA.calculate_uncalibrated_s()
+    CalibrationVNA.get_uncalibrated_s(measurData, sMatr)
+    DATA.frequency = sMatr.frequency
+    DATA.S11 = list(map(abs, sMatr.S11))
+    DATA.S12 = list(map(abs, sMatr.S12))
+    DATA.S21 = list(map(abs, sMatr.S21))
+    DATA.S22 = list(map(abs, sMatr.S22))
+    print("DATA:", DATA.__dict__)
 
 
 def getCallibHH(func, SETTINGS, *args):
@@ -210,27 +254,57 @@ def get_settings():
     return jsonify(SETTINGS.toDict())
 
 
+def calibration(DeviceVNA, data):
+    newData = DeviceVNA.get_result()
+    data.frequency = newData.frequency
+    data.a0 = newData.a0
+    data.b0_3 = newData.b0_3
+    data.b3_3 = newData.b3_3
+    data.a3 = newData.a3
+    data.b0_6 = newData.b0_6
+    data.b3_6 = newData.b3_6
+    return 1
+
+
+
+MATCH, KZ, HH = VNAData(), VNAData(), VNAData()
+
+
 @app.get("/HH")
 def calib_HH():
-    global SETTINGS, EVENTS
-    event = VNAEvent(func=lambda: getCallibHH(calib, SETTINGS), repeat=1, priority=1)
+    global SETTINGS, EVENTS, MATCH, KZ, HH, DeviceVNA, CalibrationVNA
+    event = VNAEvent(func=lambda: getCallibHH(calibration,SETTINGS,DeviceVNA, HH), repeat=1, priority=3)
     EVENTS.append(event)
     return jsonify('In process')
 
 
 @app.get("/KZ")
 def calib_KZ():
-    global SETTINGS, EVENTS
-    event = VNAEvent(func=lambda: getCallibKZ(calib, SETTINGS), repeat=1, priority=1)
+    global SETTINGS, EVENTS, MATCH, KZ, HH, DeviceVNA, CalibrationVNA
+    event = VNAEvent(func=lambda: getCallibKZ(calibration,SETTINGS,DeviceVNA,KZ), repeat=1, priority=3)
     EVENTS.append(event)
     return jsonify('In process')
 
 
 @app.get("/Match")
 def calib_Match():
-    global SETTINGS, EVENTS
-    event = VNAEvent(func=lambda: getCallibMatch(calib, SETTINGS), repeat=1, priority=1)
+    global SETTINGS, EVENTS, MATCH, KZ, HH, DeviceVNA, CalibrationVNA
+    event = VNAEvent(func=lambda: getCallibMatch(calibration,SETTINGS,DeviceVNA,MATCH), repeat=1, priority=3)
     EVENTS.append(event)
+    if MATCH is not None and KZ is not None and HH is not None:
+        #дождаться пока будут получены измерения match
+        CalibrationVNA.load_port_one_calibration_standart_data(Open=HH, Short=KZ, Match=MATCH)
+        event = VNAEvent(func=lambda: CalibrationVNA.interpolate_standarts(), repeat=1, priority=6)
+        EVENTS.append(event)
+        event = VNAEvent(func=lambda: CalibrationVNA.calc_port_one_err(), repeat=1, priority=5)
+        EVENTS.append(event)
+        event = VNAEvent(func=lambda: CalibrationVNA.apply_port_one_err(), repeat=1, priority=4)
+        EVENTS.append(event)
+        event = VNAEvent(
+            func=lambda: getNewData(DeviceVNA.get_result, CalibrationVNA, DATA, ),
+            priority=3, timeEnd=datetime.now() + timedelta(minutes=5))
+        print("ADD EVENT:", event.__dict__)
+        EVENTS.append(event)
     return jsonify('In process')
 
 

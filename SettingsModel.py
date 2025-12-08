@@ -1,3 +1,6 @@
+from driver.build.vnakit_py import RecordingSettings, FrequencyRange
+
+
 def get_nested_attr(obj, attr):
     """Retrieve a nested attribute from an object."""
     for part in attr.split('.'):
@@ -18,11 +21,11 @@ class SettingsModel:
     def __init__(self, author_id=-1):
         self.id = -1
         self.author_id = author_id
-        self.freq_start_mhz = 100
-        self.freq_stop_mhz = 1000
-        self.num_freq_points = 100
-        self.rbw_khz = 1
-        self.output_power_dbm = -3
+        self.freq_start_mhz = 500
+        self.freq_stop_mhz = 6000
+        self.num_freq_points = 1001
+        self.rbw_khz = 2
+        self.output_power_dbm = -10
         self.txtr = 3
         self.mode = 0
         self.calib_HH = 1
@@ -37,6 +40,24 @@ class SettingsModel:
         cpyData(self, dbSettings, mapp)
         return self
 
+    def toDB(self, dbSettings):
+        mapp = {'author_id': 'author_id', 'freq_start_mhz': 'freq_start_mhz',
+                'freq_stop_mhz': 'freq_stop_mhz', 'num_freq_points': 'num_freq_points', 'rbw_khz': 'rbw_khz',
+                'output_power_dbm': 'output_power_dbm', 'txtr': 'txtr', 'mode': 'mode'}
+        cpyData(dbSettings, self, mapp)
+        return dbSettings
+
+    def toRecordingSettings(self):
+        recordSettings = RecordingSettings()
+        recordSettings.freq_range = FrequencyRange()
+        mapp = {'freq_start_mhz': 'freq_start_mhz', 'freq_stop_mhz': 'freq_stop_mhz',
+                'num_freq_points': 'num_freq_points'}
+        cpyData(recordSettings.freq_range, self, mapp)
+
+        mapp = {'rbw_khz': 'rbw_khz', 'output_power_dbm': 'output_power_dbm', 'txtr': 'txtr', 'mode': 'mode'}
+        cpyData(recordSettings, self, mapp)
+        return recordSettings
+
     def fromForm(self, form):
         mapp = {'freq_start_mhz.data': 'freq_start_mhz', 'freq_stop_mhz.data': 'freq_stop_mhz',
                 'num_freq_points.data': 'num_freq_points', 'rbw_khz.data': 'rbw_khz',
@@ -45,13 +66,6 @@ class SettingsModel:
         self.txtr = int(self.txtr)
         self.mode = int(self.mode)
         return self
-
-    def toDB(self, dbSettings):
-        mapp = {'author_id': 'author_id', 'freq_start_mhz': 'freq_start_mhz',
-                'freq_stop_mhz': 'freq_stop_mhz', 'num_freq_points': 'num_freq_points', 'rbw_khz': 'rbw_khz',
-                'output_power_dbm': 'output_power_dbm', 'txtr': 'txtr', 'mode': 'mode'}
-        cpyData(dbSettings, self, mapp)
-        return dbSettings
 
     def toDict(self):
         return self.__dict__

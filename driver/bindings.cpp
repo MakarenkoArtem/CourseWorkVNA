@@ -4,6 +4,7 @@
 #include "VNAKitDevice.h"
 #include "VNACalibration.h"
 
+using namespace pybind11::literals;
 namespace py = pybind11;
 
 PYBIND11_MODULE(vnakit_py, m) {
@@ -61,13 +62,13 @@ PYBIND11_MODULE(vnakit_py, m) {
     // === НОВАЯ СТРУКТУРА: VNAData ===
     py::class_<VNAData>(m, "VNAData")
         .def(py::init<>())
-        .def_readonly("frequency", &VNAData::frequency)
-        .def_readonly("a0", &VNAData::a0)
-        .def_readonly("a3", &VNAData::a3)
-        .def_readonly("b0_3", &VNAData::b0_3)
-        .def_readonly("b0_6", &VNAData::b0_6)
-        .def_readonly("b3_3", &VNAData::b3_3)
-        .def_readonly("b3_6", &VNAData::b3_6);
+        .def_readwrite("frequency", &VNAData::frequency)
+        .def_readwrite("a0", &VNAData::a0)
+        .def_readwrite("a3", &VNAData::a3)
+        .def_readwrite("b0_3", &VNAData::b0_3)
+        .def_readwrite("b0_6", &VNAData::b0_6)
+        .def_readwrite("b3_3", &VNAData::b3_3)
+        .def_readwrite("b3_6", &VNAData::b3_6);
 
     // === Основной класс: VNAKitDevice ===
     py::class_<VNAKitDevice>(m, "VNAKitDevice")
@@ -107,7 +108,17 @@ PYBIND11_MODULE(vnakit_py, m) {
     .def_readwrite("S11", &Smatrixs::S11)
     .def_readwrite("S12", &Smatrixs::S12)
     .def_readwrite("S21", &Smatrixs::S21)
-    .def_readwrite("S22", &Smatrixs::S22);
+    .def_readwrite("S22", &Smatrixs::S22)
+    .def("to_dict", [](const Smatrixs& s) {
+        py::dict d;
+        d["frequency"] = s.frequency;
+        d["S11"] = s.S11;
+        d["S12"] = s.S12;
+        d["S21"] = s.S21;
+        d["S22"] = s.S22;
+        return d;
+    });
+
 
 // === НОВАЯ СТРУКТУРА: OSMstandart ===
 py::class_<OSMstandart>(m, "OSMstandart")
@@ -205,7 +216,7 @@ py::class_<VNACalibration>(m, "VNACalibration")
     .def("apply_12term_errors", &VNACalibration::Apply12termErrors)
     .def("get_interp_index", &VNACalibration::getInterpIndex,
         py::arg("ConstStepArr"), py::arg("point"))
-	.def("linear_interpolate", &VNACalibration::linearInterpolate,
+	.def("linearInterpolate", &VNACalibration::linearInterpolate,
          py::arg("Xarr"), py::arg("Yarr"), py::arg("index"), py::arg("arg"))
     // Управление состоянием
     .def("get_status", &VNACalibration::get_status)
@@ -214,6 +225,8 @@ py::class_<VNACalibration>(m, "VNACalibration")
     .def("write_calibrated_s", &VNACalibration::writeCalibratedS, py::arg("filename"))
     .def("get_calibrated_s", &VNACalibration::getCalibratedS)
     .def("get_calibration_frequencies", &VNACalibration::getCalibrationFrequencies)
+    .def("get_uncalibrated_s", &VNACalibration::getUncalibratedS,
+     py::arg("data"), py::arg("res"))
 
     // Отладка
     .def("debug_check", &VNACalibration::debugCheck, py::arg("number"));

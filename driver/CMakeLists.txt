@@ -60,17 +60,6 @@ add_custom_command(
             "python3 -m pybind11_stubgen vnakit_py --output-dir ."
 )
 
-#[[add_custom_command(TARGET vnakit_py POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E echo "Запустите виртуальное окружение (source ../.venv/bin/activate) и введите: python3 -m pybind11_stubgen vnakit_py --output-dir ."
-)
-
-add_custom_command(
-        TARGET vnakit_py POST_BUILD
-        COMMAND ${PYTHON_EXECUTABLE} -m pybind11_stubgen vnakit_py
-                --output-dir $<TARGET_FILE_DIR:vnakit_py>/
-        COMMENT "Generating .pyi file from compiled module"
-)]]
-
 # =============== ОПЦИОНАЛЬНО: УДАЛЕНИЕ СИМВОЛОВ ДЛЯ ПРОИЗВОДИТЕЛЬНОСТИ ===============
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     target_compile_options(vnakit_py PRIVATE -fvisibility=hidden)

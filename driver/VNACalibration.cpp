@@ -17,9 +17,9 @@
 
     void VNACalibration::loadPortOneCalibrationStandartData(const VNAData& Open, const VNAData& Short, const VNAData& Match)
     {
-        OpenRaw.a0 = Open.a0; OpenRaw.b0_3 = Open.b0_3; OpenRaw.b3_3 = Open.b3_3;
-        ShortRaw.a0 = Short.a0; ShortRaw.b0_3 = Short.b0_3; ShortRaw.b3_3 = Short.b3_3;
-        MatchRaw.a0 = Match.a0; MatchRaw.b0_3 = Match.b0_3; MatchRaw.b3_3 = Match.b3_3;
+        OpenRaw.frequency = Open.frequency; OpenRaw.a0 = Open.a0; OpenRaw.b0_3 = Open.b0_3; OpenRaw.b3_3 = Open.b3_3;
+        ShortRaw.frequency = Short.frequency; ShortRaw.a0 = Short.a0; ShortRaw.b0_3 = Short.b0_3; ShortRaw.b3_3 = Short.b3_3;
+        MatchRaw.frequency = Match.frequency; MatchRaw.a0 = Match.a0; MatchRaw.b0_3 = Match.b0_3; MatchRaw.b3_3 = Match.b3_3;
 
         openStandartp1 = OSMstandart();
         shortStandartp1 = OSMstandart();
@@ -33,7 +33,7 @@
             shortStandartp1.frequency.push_back(ShortRaw.frequency[i]);
             matchStandartp1.frequency.push_back(MatchRaw.frequency[i]);
 
-            openStandartp1.S.push_back(OpenRaw.b0_3[i] / OpenRaw.a0[i]);          
+            openStandartp1.S.push_back(OpenRaw.b0_3[i] / OpenRaw.a0[i]);
             shortStandartp1.S.push_back(ShortRaw.b0_3[i] / ShortRaw.a0[i]);
             matchStandartp1.S.push_back(MatchRaw.b0_3[i] / MatchRaw.a0[i]);
 
@@ -547,6 +547,7 @@
     // Пересчет сырых данных в S-параметры
     Smatrixs VNACalibration::getUncalibratedS(const VNAData& Data, Smatrixs& res)
     {
+        loadMeasurementData(Data);
         res.frequency.resize(N);
         res.S11.resize(N);
         res.S12.resize(N);
@@ -555,6 +556,7 @@
 
         for (int i = 0; i < N; i++)
         {
+            res.frequency[i]=Data.frequency[i];
             // Проверка деления на ноль
             if (std::abs(Data.a0[i]) < 1e-15) {
                 cerr << "Внимание: a0[" << i << "] близко к нулю! freq = " << Data.frequency[i] << endl;
@@ -736,6 +738,9 @@
     void VNACalibration::ApplyPortOneErr()
     {
         calibratedS.S11.clear();
+        cout<<"N: "<<N<<endl;
+        cout<<"firstPortE[0]: "<< firstPortE[0].ef00<<endl;
+        cout<<"firstPortE[-1]: "<< firstPortE[N-1].ef00<<endl;
         for (int i = 0; i < N; i++)
         {
             complex<double> Gm = uncalibratedS.S11[i];
@@ -906,7 +911,7 @@
     }
     // тут всегда возвращается полная матрица - надо бы помнить какая калибровка
     Smatrixs VNACalibration::getCalibratedS(){
-        if (!status.Smatrix_calibrated || !status.S11_calibrated || !status.S22_calibrated) {
+        if (!status.Smatrix_calibrated && !status.S11_calibrated && !status.S22_calibrated) {
             //throw std::runtime_error("S-параметры не откалиброваны");
             cerr << "S-параметры не откалиброваны" << endl;
         }
@@ -947,7 +952,7 @@
             cout << "Short=" << shortStandartp1.S[i] << " ";
             cout << "Match=" << matchStandartp1.S[i] << endl;
         }
-        cout << "Размеры стандартов второго порта:" << endl;
+        /*cout << "Размеры стандартов второго порта:" << endl;
         cout << "O: " << openStandartp2.S.size() << endl;
         cout << "S: " << shortStandartp2.S.size() << endl;
         cout << "M: " << matchStandartp2.S.size() << endl;
@@ -958,7 +963,7 @@
             cout << "Short=" << shortStandartp2.S[i] << " ";
             cout << "Match=" << matchStandartp2.S[i] << endl;
         }
-        cout << endl;
+        cout << endl;*/
 
         cout << "проверяем неоткалиброванные S" << endl;
         cout << "количество частот: " << uncalibratedS.frequency.size() << endl;
@@ -985,13 +990,13 @@
             cout << "  detEf = " << firstPortE[i].detEf << ",  "<< endl;
         }
         
-        for (int i = 0; i < min(5, N); i++) {
+        /*for (int i = 0; i < min(5, N); i++) {
             cout << "Точка " << i << ":  ";
             cout << "  er00 = " << secondPortE[i].ef00 << ",  ";
             cout << "  er11 = " << secondPortE[i].ef11 << ",  ";
             cout << "  detEr = " << secondPortE[i].detEf << ",  "<< endl;
         }
-        cout << endl;
+        cout << endl;*/
 
         cout << "проверяем откалиброванные S" << endl;
         cout << "количество частот: " << calibratedS.frequency.size() << endl;
