@@ -13,17 +13,16 @@ set(pybind11_DIR "/usr/lib/python3/dist-packages/pybind11/share/cmake/pybind11")
 find_package(pybind11 REQUIRED)
 
 # ---- Создание Python модуля ----
-pybind11_add_module(vna_cal
+pybind11_add_module(vnakit_calibration
         ../bindingsCalibration.cpp
         ../VNACalibration.cpp
-        ../VNACalibration.h
 )
 
 # Если нужны include директории
-target_include_directories(vna_cal PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/..)
+target_include_directories(vnakit_calibration PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/..)
 
 # ---- Установка RPATH ----
-set_target_properties(vna_cal PROPERTIES
+set_target_properties(vnakit_calibration PROPERTIES
     INSTALL_RPATH "$ORIGIN"
     BUILD_RPATH "$ORIGIN"
 )

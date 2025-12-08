@@ -30,11 +30,10 @@ VNAKit_RecordingSettings& VNAKitDevice::getSettings(){
 }
 
 void VNAKitDevice::setSettings(const VNAKit_RecordingSettings s){
-  	if (settings.freqRange.freqStartMHz == s.freqRange.freqStartMHz && settings.freqRange.freqStopMHz == s.freqRange.freqStopMHz
-      && settings.freqRange.numFreqPoints == s.freqRange.numFreqPoints
-      && settings.rbw_khz == s.rbw_khz && settings.outputPower_dbm == s.outputPower_dbm
-      && settings.txtr == s.txtr
-      && settings.mode == s.mode)
+  	if (settings.freqRange.freqStartMHz != s.freqRange.freqStartMHz && settings.freqRange.freqStopMHz != s.freqRange.freqStopMHz
+      && settings.freqRange.numFreqPoints != s.freqRange.numFreqPoints
+      && settings.rbw_khz != s.rbw_khz && settings.outputPower_dbm != s.outputPower_dbm
+      && settings.txtr != s.txtr && settings.mode != s.mode)
     	settings = s;
 }
 

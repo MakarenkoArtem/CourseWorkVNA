@@ -1,4 +1,6 @@
 from driver.build.vnakit_py import *
+f  = VNACalibration()
+print(f.get_status())
 
 dev = VNAKitDevice(config_path="driver/vnakit.conf")
 dev.init()
@@ -24,14 +26,11 @@ fields = {
 
 print(fields)
 dev.shutdown()
-
-
 class VNADevice(VNAKitDevice):
     def __init__(self, config_path):
         self.super(config_path)
         self.init()
-
-    def getMeasur(self, recSettings: RecordingSettings):
+    def getMeasur(self, recSettings:RecordingSettings):
         self.set_settings(recSettings)
         self.validate_settings()
         self.apply_settings()

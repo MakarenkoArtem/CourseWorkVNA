@@ -9,6 +9,7 @@
 #include <sstream>
 #include <algorithm>
 #include <iomanip>
+#include "VNAKitDevice.h"
 
 using std::vector;
 using std::complex;
@@ -26,7 +27,7 @@ using std::setw;
 using std::fixed;
 using std::setprecision;
 using std::exception;
-
+/*
 struct VNAData {
     std::vector<double> frequency;
     std::vector<std::complex<double>> a0;  // Port 2
@@ -35,7 +36,7 @@ struct VNAData {
     std::vector<std::complex<double>> b0_6;  // Port 1 (transmission from 6)
     std::vector<std::complex<double>> b3_3;  // Port 4 (transmission from 3)
     std::vector<std::complex<double>> b3_6;  // Port 4 (transmission from 6)
-};
+};*/
 
 struct Smatrixs {
     std::vector<double> frequency;

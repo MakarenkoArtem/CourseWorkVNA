@@ -1,7 +1,7 @@
 #include "VNACalibration.h"
 
     //получить статус экзмепляра калибровки
-    VNACalibration::flags VNACalibration::get_status() {
+    flags VNACalibration::get_status() {
         return status;
     }
 
@@ -445,7 +445,7 @@
         return (y2 - y1) / (x2 - x1) * arg + (y1*x2 - y2*x1) / (x2 - x1);
     }
 
-    int getInterpIndex(vector<double>& ConstStepArr, double point)
+    int VNACalibration::getInterpIndex(vector<double>& ConstStepArr, double point)
     {
         if (ConstStepArr.empty()) {
             cerr << "Ошибка: пустой массив частот!" << endl;

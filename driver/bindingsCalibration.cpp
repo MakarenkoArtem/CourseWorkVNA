@@ -3,12 +3,11 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <pybind11/complex.h>
-#include "VNAKitDevice.h"
 #include "VNACalibration.h"
 
 namespace py = pybind11;
 
-PYBIND11_MODULE(vnakit_calibretion, m) {
+PYBIND11_MODULE(vnakit_calibration, m) {
 // Экспорт всех структур (включая OSMstandart!)
 py::class_<VNAData>(m, "VNAData")
     .def(py::init<>())
@@ -29,58 +28,58 @@ py::class_<Smatrixs>(m, "Smatrixs")
     .def_readwrite("S22", &Smatrixs::S22);
 
 // === НОВАЯ СТРУКТУРА: OSMstandart ===
-py::class_<VNACalibration::OSMstandart>(m, "OSMstandart")
+py::class_<OSMstandart>(m, "OSMstandart")
     .def(py::init<>())
-    .def_readwrite("frequency", &VNACalibration::OSMstandart::frequency)
-    .def_readwrite("S", &VNACalibration::OSMstandart::S);
+    .def_readwrite("frequency", &OSMstandart::frequency)
+    .def_readwrite("S", &OSMstandart::S);
 
 // === Структура флагов ===
-py::class_<VNACalibration::flags>(m, "CalibrationFlags")
+py::class_<flags>(m, "CalibrationFlags")
     .def(py::init<>())
-    .def_readonly("full_measurement_data_got", &VNACalibration::flags::full_measurement_data_got)
-    .def_readonly("measurement_data_side3_got", &VNACalibration::flags::measurement_data_side3_got)
-    .def_readonly("measurement_data_side6_got", &VNACalibration::flags::measurement_data_side6_got)
-    .def_readonly("firstP_standart_data_got", &VNACalibration::flags::firstP_standart_data_got)
-    .def_readonly("secondP_standart_data_got", &VNACalibration::flags::secondP_standart_data_got)
-    .def_readonly("thru_standart_got", &VNACalibration::flags::thru_standart_got)
-    .def_readonly("match2_standart_got", &VNACalibration::flags::match2_standart_got)
-    .def_readonly("firstP_standart_interpolated", &VNACalibration::flags::firstP_standart_interpolated)
-    .def_readonly("secondP_standart_interpolated", &VNACalibration::flags::secondP_standart_interpolated)
-    .def_readonly("thru_standart_interpolated", &VNACalibration::flags::thru_standart_interpolated)
-    .def_readonly("match2_standart_interpolated", &VNACalibration::flags::match2_standart_interpolated)
-    .def_readonly("uncalibrates_S_calculated", &VNACalibration::flags::uncalibrates_S_calculated)
-    .def_readonly("port_one_errors_calculated", &VNACalibration::flags::port_one_errors_calculated)
-    .def_readonly("port_two_errors_calculated", &VNACalibration::flags::port_two_errors_calculated)
-    .def_readonly("error_12term_calculated", &VNACalibration::flags::error_12term_calculated)
-    .def_readonly("S11_calibrated", &VNACalibration::flags::S11_calibrated)
-    .def_readonly("S22_calibrated", &VNACalibration::flags::S22_calibrated)
-    .def_readonly("Smatrix_calibrated", &VNACalibration::flags::Smatrix_calibrated);
+    .def_readonly("full_measurement_data_got", &flags::full_measurement_data_got)
+    .def_readonly("measurement_data_side3_got", &flags::measurement_data_side3_got)
+    .def_readonly("measurement_data_side6_got", &flags::measurement_data_side6_got)
+    .def_readonly("firstP_standart_data_got", &flags::firstP_standart_data_got)
+    .def_readonly("secondP_standart_data_got", &flags::secondP_standart_data_got)
+    .def_readonly("thru_standart_got", &flags::thru_standart_got)
+    .def_readonly("match2_standart_got", &flags::match2_standart_got)
+    .def_readonly("firstP_standart_interpolated", &flags::firstP_standart_interpolated)
+    .def_readonly("secondP_standart_interpolated", &flags::secondP_standart_interpolated)
+    .def_readonly("thru_standart_interpolated", &flags::thru_standart_interpolated)
+    .def_readonly("match2_standart_interpolated", &flags::match2_standart_interpolated)
+    .def_readonly("uncalibrates_S_calculated", &flags::uncalibrates_S_calculated)
+    .def_readonly("port_one_errors_calculated", &flags::port_one_errors_calculated)
+    .def_readonly("port_two_errors_calculated", &flags::port_two_errors_calculated)
+    .def_readonly("error_12term_calculated", &flags::error_12term_calculated)
+    .def_readonly("S11_calibrated", &flags::S11_calibrated)
+    .def_readonly("S22_calibrated", &flags::S22_calibrated)
+    .def_readonly("Smatrix_calibrated", &flags::Smatrix_calibrated);
 
 // === Основные структуры ошибок ===
-py::class_<VNACalibration::singlePortE>(m, "SinglePortError")
+py::class_<singlePortE>(m, "SinglePortError")
     .def(py::init<>())
-    .def_readwrite("ef00", &VNACalibration::singlePortE::ef00)
-    .def_readwrite("ef11", &VNACalibration::singlePortE::ef11)
-    .def_readwrite("det_ef", &VNACalibration::singlePortE::detEf);
+    .def_readwrite("ef00", &singlePortE::ef00)
+    .def_readwrite("ef11", &singlePortE::ef11)
+    .def_readwrite("det_ef", &singlePortE::detEf);
 
-py::class_<VNACalibration::fullErrModel>(m, "FullErrorModel")
+py::class_<fullErrModel>(m, "FullErrorModel")
     .def(py::init<>())
     // Однопортовые по 1-му порту
-    .def_readwrite("ef00", &VNACalibration::fullErrModel::ef00)
-    .def_readwrite("ef11", &VNACalibration::fullErrModel::ef11)
-    .def_readwrite("ef10_01", &VNACalibration::fullErrModel::ef10_01)
+    .def_readwrite("ef00", &fullErrModel::ef00)
+    .def_readwrite("ef11", &fullErrModel::ef11)
+    .def_readwrite("ef10_01", &fullErrModel::ef10_01)
     // По 2-му порту
-    .def_readwrite("er33", &VNACalibration::fullErrModel::er33)
-    .def_readwrite("er22", &VNACalibration::fullErrModel::er22)
-    .def_readwrite("er23_32", &VNACalibration::fullErrModel::er23_32)
+    .def_readwrite("er33", &fullErrModel::er33)
+    .def_readwrite("er22", &fullErrModel::er22)
+    .def_readwrite("er23_32", &fullErrModel::er23_32)
     // Утечки
-    .def_readwrite("ef30", &VNACalibration::fullErrModel::ef30)
-    .def_readwrite("er03", &VNACalibration::fullErrModel::er03)
+    .def_readwrite("ef30", &fullErrModel::ef30)
+    .def_readwrite("er03", &fullErrModel::er03)
     // Двупортовые
-    .def_readwrite("ef22", &VNACalibration::fullErrModel::ef22)
-    .def_readwrite("ef10_32", &VNACalibration::fullErrModel::ef10_32)
-    .def_readwrite("er11", &VNACalibration::fullErrModel::er11)
-    .def_readwrite("er23_01", &VNACalibration::fullErrModel::er23_01);
+    .def_readwrite("ef22", &fullErrModel::ef22)
+    .def_readwrite("ef10_32", &fullErrModel::ef10_32)
+    .def_readwrite("er11", &fullErrModel::er11)
+    .def_readwrite("er23_01", &fullErrModel::er23_01);
 
 // === ОСНОВНОЙ КЛАСС ===
 py::class_<VNACalibration>(m, "VNACalibration")
@@ -122,7 +121,10 @@ py::class_<VNACalibration>(m, "VNACalibration")
     .def("apply_port_one_err", &VNACalibration::ApplyPortOneErr)
     .def("apply_port_two_err", &VNACalibration::ApplyPortTwoErr)
     .def("apply_12term_errors", &VNACalibration::Apply12termErrors)
-
+    .def("get_interp_index", &VNACalibration::getInterpIndex,
+        py::arg("ConstStepArr"), py::arg("point"))
+	.def("linear_interpolate", &VNACalibration::linearInterpolate,
+         py::arg("Xarr"), py::arg("Yarr"), py::arg("index"), py::arg("arg"))
     // Управление состоянием
     .def("get_status", &VNACalibration::get_status)
 

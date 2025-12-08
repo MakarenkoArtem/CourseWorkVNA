@@ -117,24 +117,24 @@ depend:
 .PHONY : depend
 
 #=============================================================================
-# Target rules for targets named vna_cal
+# Target rules for targets named vnakit_calibration
 
 # Build rule for target.
-vna_cal: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vna_cal
-.PHONY : vna_cal
+vnakit_calibration: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vnakit_calibration
+.PHONY : vnakit_calibration
 
 # fast build rule for target.
-vna_cal/fast:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/vna_cal.dir/build.make CMakeFiles/vna_cal.dir/build
-.PHONY : vna_cal/fast
+vnakit_calibration/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/vnakit_calibration.dir/build.make CMakeFiles/vnakit_calibration.dir/build
+.PHONY : vnakit_calibration/fast
 
 home/artem/PycharmProjects/CourseWorkVNA/driver/VNACalibration.o: home/artem/PycharmProjects/CourseWorkVNA/driver/VNACalibration.cpp.o
 .PHONY : home/artem/PycharmProjects/CourseWorkVNA/driver/VNACalibration.o
 
 # target to build an object file
 home/artem/PycharmProjects/CourseWorkVNA/driver/VNACalibration.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/vna_cal.dir/build.make CMakeFiles/vna_cal.dir/home/artem/PycharmProjects/CourseWorkVNA/driver/VNACalibration.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/vnakit_calibration.dir/build.make CMakeFiles/vnakit_calibration.dir/home/artem/PycharmProjects/CourseWorkVNA/driver/VNACalibration.cpp.o
 .PHONY : home/artem/PycharmProjects/CourseWorkVNA/driver/VNACalibration.cpp.o
 
 home/artem/PycharmProjects/CourseWorkVNA/driver/VNACalibration.i: home/artem/PycharmProjects/CourseWorkVNA/driver/VNACalibration.cpp.i
@@ -142,7 +142,7 @@ home/artem/PycharmProjects/CourseWorkVNA/driver/VNACalibration.i: home/artem/Pyc
 
 # target to preprocess a source file
 home/artem/PycharmProjects/CourseWorkVNA/driver/VNACalibration.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/vna_cal.dir/build.make CMakeFiles/vna_cal.dir/home/artem/PycharmProjects/CourseWorkVNA/driver/VNACalibration.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/vnakit_calibration.dir/build.make CMakeFiles/vnakit_calibration.dir/home/artem/PycharmProjects/CourseWorkVNA/driver/VNACalibration.cpp.i
 .PHONY : home/artem/PycharmProjects/CourseWorkVNA/driver/VNACalibration.cpp.i
 
 home/artem/PycharmProjects/CourseWorkVNA/driver/VNACalibration.s: home/artem/PycharmProjects/CourseWorkVNA/driver/VNACalibration.cpp.s
@@ -150,7 +150,7 @@ home/artem/PycharmProjects/CourseWorkVNA/driver/VNACalibration.s: home/artem/Pyc
 
 # target to generate assembly for a file
 home/artem/PycharmProjects/CourseWorkVNA/driver/VNACalibration.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/vna_cal.dir/build.make CMakeFiles/vna_cal.dir/home/artem/PycharmProjects/CourseWorkVNA/driver/VNACalibration.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/vnakit_calibration.dir/build.make CMakeFiles/vnakit_calibration.dir/home/artem/PycharmProjects/CourseWorkVNA/driver/VNACalibration.cpp.s
 .PHONY : home/artem/PycharmProjects/CourseWorkVNA/driver/VNACalibration.cpp.s
 
 home/artem/PycharmProjects/CourseWorkVNA/driver/bindingsCalibration.o: home/artem/PycharmProjects/CourseWorkVNA/driver/bindingsCalibration.cpp.o
@@ -158,7 +158,7 @@ home/artem/PycharmProjects/CourseWorkVNA/driver/bindingsCalibration.o: home/arte
 
 # target to build an object file
 home/artem/PycharmProjects/CourseWorkVNA/driver/bindingsCalibration.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/vna_cal.dir/build.make CMakeFiles/vna_cal.dir/home/artem/PycharmProjects/CourseWorkVNA/driver/bindingsCalibration.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/vnakit_calibration.dir/build.make CMakeFiles/vnakit_calibration.dir/home/artem/PycharmProjects/CourseWorkVNA/driver/bindingsCalibration.cpp.o
 .PHONY : home/artem/PycharmProjects/CourseWorkVNA/driver/bindingsCalibration.cpp.o
 
 home/artem/PycharmProjects/CourseWorkVNA/driver/bindingsCalibration.i: home/artem/PycharmProjects/CourseWorkVNA/driver/bindingsCalibration.cpp.i
@@ -166,7 +166,7 @@ home/artem/PycharmProjects/CourseWorkVNA/driver/bindingsCalibration.i: home/arte
 
 # target to preprocess a source file
 home/artem/PycharmProjects/CourseWorkVNA/driver/bindingsCalibration.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/vna_cal.dir/build.make CMakeFiles/vna_cal.dir/home/artem/PycharmProjects/CourseWorkVNA/driver/bindingsCalibration.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/vnakit_calibration.dir/build.make CMakeFiles/vnakit_calibration.dir/home/artem/PycharmProjects/CourseWorkVNA/driver/bindingsCalibration.cpp.i
 .PHONY : home/artem/PycharmProjects/CourseWorkVNA/driver/bindingsCalibration.cpp.i
 
 home/artem/PycharmProjects/CourseWorkVNA/driver/bindingsCalibration.s: home/artem/PycharmProjects/CourseWorkVNA/driver/bindingsCalibration.cpp.s
@@ -174,7 +174,7 @@ home/artem/PycharmProjects/CourseWorkVNA/driver/bindingsCalibration.s: home/arte
 
 # target to generate assembly for a file
 home/artem/PycharmProjects/CourseWorkVNA/driver/bindingsCalibration.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/vna_cal.dir/build.make CMakeFiles/vna_cal.dir/home/artem/PycharmProjects/CourseWorkVNA/driver/bindingsCalibration.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/vnakit_calibration.dir/build.make CMakeFiles/vnakit_calibration.dir/home/artem/PycharmProjects/CourseWorkVNA/driver/bindingsCalibration.cpp.s
 .PHONY : home/artem/PycharmProjects/CourseWorkVNA/driver/bindingsCalibration.cpp.s
 
 # Help Target
@@ -185,7 +185,7 @@ help:
 	@echo "... depend"
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
-	@echo "... vna_cal"
+	@echo "... vnakit_calibration"
 	@echo "... home/artem/PycharmProjects/CourseWorkVNA/driver/VNACalibration.o"
 	@echo "... home/artem/PycharmProjects/CourseWorkVNA/driver/VNACalibration.i"
 	@echo "... home/artem/PycharmProjects/CourseWorkVNA/driver/VNACalibration.s"
