@@ -166,16 +166,17 @@ def getNewData(func, CalibrationVNA, DATA, *args):
     #sMatr = Smatrixs()
     CalibrationVNA.load_measurement_data(measurData)
     CalibrationVNA.calculate_uncalibrated_s()
-    CalibrationVNA.interpolate_standarts()
-    CalibrationVNA.calc_port_one_err()
-    CalibrationVNA.apply_port_one_err()
+    CalibrationVNA.apply_12term_errors()
+    #CalibrationVNA.interpolate_standarts()
+    #CalibrationVNA.calc_port_one_err()
+    #CalibrationVNA.apply_port_one_err()
     sMatr = CalibrationVNA.get_calibrated_s()
     #CalibrationVNA.debug_check(247)
     #DATA.frequency = sMatr.frequency
     DATA.S11 = list(map(abs, sMatr.S11))
-    DATA.S12 = list(map(abs, sMatr.S11))
-    DATA.S21 = list(map(abs, sMatr.S11))
-    DATA.S22 = list(map(abs, sMatr.S11))
+    DATA.S12 = list(map(abs, sMatr.S12))
+    DATA.S21 = list(map(abs, sMatr.S21))
+    DATA.S22 = list(map(abs, sMatr.S22))
     print("NEW DATA:", DATA.__dict__)
 
 def getData(func, CalibrationVNA,DATA, *args):
@@ -267,7 +268,7 @@ def calibration(DeviceVNA, data):
 
 
 
-MATCH, KZ, HH = VNAData(), VNAData(), VNAData()
+MATCH, KZ, HH, Bolt = VNAData(), VNAData(), VNAData(), VNAData()
 
 
 @app.get("/HH")
@@ -291,15 +292,21 @@ def calib_Match():
     global SETTINGS, EVENTS, MATCH, KZ, HH, DeviceVNA, CalibrationVNA
     event = VNAEvent(func=lambda: getCallibMatch(calibration,SETTINGS,DeviceVNA,MATCH), repeat=1, priority=3)
     EVENTS.append(event)
-    if MATCH is not None and KZ is not None and HH is not None:
+    if MATCH is not None and KZ is not None and HH is not None and Bolt is not None:
         #дождаться пока будут получены измерения match
         CalibrationVNA.load_port_one_calibration_standart_data(Open=HH, Short=KZ, Match=MATCH)
-        event = VNAEvent(func=lambda: CalibrationVNA.interpolate_standarts(), repeat=1, priority=6)
-        EVENTS.append(event)
-        event = VNAEvent(func=lambda: CalibrationVNA.calc_port_one_err(), repeat=1, priority=5)
-        EVENTS.append(event)
-        event = VNAEvent(func=lambda: CalibrationVNA.apply_port_one_err(), repeat=1, priority=4)
-        EVENTS.append(event)
+        CalibrationVNA.load_port_two_calibration_standart_data(Open=HH, Short=KZ, Match=MATCH)
+        CalibrationVNA.load_thru_standart_data(Bolt)
+        CalibrationVNA.calculate_uncalibrated_s()
+        CalibrationVNA.interpolate_standarts()
+        CalibrationVNA.calc_12term_err()
+        CalibrationVNA.apply_12term_errors()
+        #event = VNAEvent(func=lambda: CalibrationVNA.interpolate_standarts(), repeat=1, priority=6)
+        #EVENTS.append(event)
+        #event = VNAEvent(func=lambda: CalibrationVNA.calc_port_one_err(), repeat=1, priority=5)
+        #EVENTS.append(event)
+        #event = VNAEvent(func=lambda: CalibrationVNA.apply_port_one_err(), repeat=1, priority=4)
+        #EVENTS.append(event)
         event = VNAEvent(
             func=lambda: getNewData(DeviceVNA.get_result, CalibrationVNA, DATA, ),
             priority=3, timeEnd=datetime.now() + timedelta(minutes=5))
@@ -310,8 +317,8 @@ def calib_Match():
 
 @app.get("/Bolt")
 def calib_Bolt():
-    global SETTINGS, EVENTS
-    event = VNAEvent(func=lambda: getCallibBolt(calib, SETTINGS), repeat=1, priority=1)
+    global SETTINGS, EVENTS, MATCH, KZ, HH, Bolt, DeviceVNA, CalibrationVNA
+    event = VNAEvent(func=lambda: getCallibBolt(calibration,SETTINGS,DeviceVNA,Bolt), repeat=1, priority=3)
     EVENTS.append(event)
     return jsonify('In process')
 
