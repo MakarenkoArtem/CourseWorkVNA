@@ -1,7 +1,6 @@
 from driver.build.vnakit_py import *
 f  = VNACalibration()
 print(f.get_status())
-
 dev = VNAKitDevice(config_path="driver/vnakit.conf")
 dev.init()
 set = RecordingSettings()
