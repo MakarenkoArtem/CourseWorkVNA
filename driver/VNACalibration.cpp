@@ -738,9 +738,6 @@
     void VNACalibration::ApplyPortOneErr()
     {
         calibratedS.S11.clear();
-        cout<<"N: "<<N<<endl;
-        cout<<"firstPortE[0]: "<< firstPortE[0].ef00<<endl;
-        cout<<"firstPortE[-1]: "<< firstPortE[N-1].ef00<<endl;
         for (int i = 0; i < N; i++)
         {
             complex<double> Gm = uncalibratedS.S11[i];

@@ -1,65 +1,31 @@
 import os
 import subprocess
-import time
 from datetime import datetime, timedelta
-from threading import Thread
+import logging
 
-from flask import Flask, request, jsonify, send_from_directory, render_template, redirect
+from flask import Flask, jsonify, send_from_directory, render_template, redirect
 from flask_cors import CORS
 from flask_login import LoginManager, current_user, login_user, login_required, logout_user
 from werkzeug.security import check_password_hash
 
-import emulator
 import processing
-from VNAEvent import VNAEvent
 from SettingsModel import SettingsModel
+from VNAWorker import VNAWorker
 from data import db_session
 from data.settings import Setting
 from data.users import User
+from driver.build.vnakit_py import *
 from forms.measure import MeasureForm
 from forms.user import RegisterForm, EntryForm
-from driver.build.vnakit_py import *
 
-CalibrationVNA = VNACalibration()
 SETTINGS = SettingsModel()
+VNA_WORKER = VNAWorker()
+VNA_WORKER.init(SETTINGS.toRecordingSettings())
+CalibrationVNA = VNACalibration()
 DATA = processing.Smatrixs(frequency=[], S11=[], S12=[], S21=[], S22=[])
-'''DATA.frequency=[]
-DATA.S11=[]
-DATA.S12=[]
-DATA.S21=[]
-DATA.S22=[]'''
-DeviceVNA = VNAKitDevice(config_path="driver/vnakit.conf")
-DeviceVNA.init()
-DeviceVNA.set_settings(SETTINGS.toRecordingSettings())
-DeviceVNA.apply_settings()
-
-
-def VNAWorker(events):
-    event = VNAEvent(int)
-    while 1:
-        events.sort(reverse=True)
-        if event.inProcess():
-            if len(events) and events[0].priority > event.priority:
-                events.append(event)
-                event = events.pop(0)
-                print("Берем более приоритетную задачу")
-            event.func()
-        else:
-            if len(events):
-                event = events.pop(0)
-                print("TAKE EVENT:", event.__dict__)
-            else:
-                time.sleep(0.5)
-
-
 activeSession = {}
-EVENTS = []
 
-app = Flask(
-    __name__,
-    # template_folder="react-app",  # Jinja2 HTML
-    # static_folder=None  # Статику подключаем вручную ниже
-)
+app = Flask(__name__, )
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "key")  # нужен для CSRF и сессий
 app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=1)
 login_manager = LoginManager()
@@ -80,150 +46,52 @@ def send_lib(path):
 @app.route("/main")
 @app.route("/main/<int:id>")
 def home(idMeasure=None):
-    name = ''
     try:
-        id = current_user.id
-        name = current_user.email
+        id, name = current_user.id, current_user.email
     except AttributeError:
-        id = 0
+        id, name = 0, ''
     return render_template("mainPage.html", id=id, name=name, idMeasure=idMeasure)
 
 
-def fillSettingsForm(form, settings):
-    if settings is not None:
-        form.freq_start_mhz.data = settings.freq_start_mhz
-        form.freq_stop_mhz.data = settings.freq_stop_mhz
-        form.num_freq_points.data = settings.num_freq_points
-        form.rbw_khz.data = settings.rbw_khz
-        form.output_power_dbm.data = settings.output_power_dbm
-        form.txtr.data = settings.txtr
-        form.mode.data = settings.mode
-    return form
+def updateSettingsDb(settingsMdl):
+    db_sess = db_session.create_session()
+    settingsDB = db_sess.query(Setting).filter(Setting.author_id == settingsMdl.author_id).first()
+    if settingsDB is None:
+        return False
+    settingsMdl.toDB(settingsDB)
+    db_sess.commit()
+    db_sess.close()
+    return True
 
 
-def to_Settings(form, settings):
-    settings.freq_start_mhz = form.freq_start_mhz.data
-    settings.freq_stop_mhz = form.freq_stop_mhz.data
-    settings.num_freq_points = form.num_freq_points.data
-    settings.rbw_khz = form.rbw_khz.data
-    settings.output_power_dbm = form.output_power_dbm.data
-    settings.txtr = int(form.txtr.data)
-    settings.mode = int(form.mode.data)
-    return settings
+def getSettingsMdlFromDB(author_id):
+    db_sess = db_session.create_session()
+    settingsDB = db_sess.query(Setting).filter(Setting.author_id == author_id).first()
+    if settingsDB is None:
+        settingsDB = SettingsModel(author_id=current_user.id).toDB(Setting())
+        db_sess.add(settingsDB)
+    settingsMdl = SettingsModel().fromDB(settingsDB)
+    db_sess.close()
+    return settingsMdl
 
 
 @app.route("/settings", methods=['GET', 'POST'])
 @login_required
 def settings():  # форма для регистрации
     if cur_user().get_json()['remainingTime'] == -1:  # устройство занято другим пользователем
-        redirect("/main")
-    global activeSession, executor, SETTINGS, EVENTS, DATA
+        return redirect("/main")
+    global activeSession, SETTINGS, DATA
     activeSession = {'user': current_user.id, 'time': datetime.now() + timedelta(minutes=5)}
     form = MeasureForm()
-    db_sess = db_session.create_session()
-    settings = db_sess.query(Setting).filter(Setting.author_id == current_user.id).first()
-    if settings is None:
-        settings = SettingsModel(author_id=current_user.id).toDB(Setting())
-        db_sess.add(settings)
+    settingsMdl = getSettingsMdlFromDB(current_user.id)
     if form.validate_on_submit():
-        newSettings = SettingsModel(author_id=current_user.id).fromForm(form)
-        newSettings.toDB(settings)
-        db_sess.commit()
-        if 'measure' in request.form:
-            if activeSession['user'] == current_user.id:
-                SETTINGS = newSettings
-                event = VNAEvent(func=lambda: DeviceVNA.set_settings(SETTINGS.toRecordingSettings()), priority=1,
-                                 repeat=1)
-                EVENTS.append(event)
-                event = VNAEvent(func=lambda: DeviceVNA.apply_settings(), priority=1, repeat=1)
-                EVENTS.append(event)
-                '''event = VNAEvent(func=lambda: getData(emulator.generate_vna_data, DATA, emulator.RecordingSettings(
-                    freq_range=emulator.FrequencyRange(SETTINGS.freq_start_mhz, SETTINGS.freq_stop_mhz,
-                                                       SETTINGS.num_freq_points),
-                    rbw_khz=SETTINGS.rbw_khz, output_power_dbm=SETTINGS.output_power_dbm, txtr=SETTINGS.txtr,
-                    mode=SETTINGS.mode)), timeEnd=datetime.now() + timedelta(minutes=5))'''
-
-                event = VNAEvent(
-                    func=lambda: getData(DeviceVNA.get_result, CalibrationVNA, DATA),
-                    timeEnd=datetime.now() + timedelta(minutes=5))
-                print("ADD EVENT:", event.__dict__)
-                EVENTS.append(event)
-                db_sess.close()
-            return redirect(f'/main')
-    fillSettingsForm(form, settings)
-    db_sess.close()
+        SETTINGS = SettingsModel(author_id=current_user.id).fromForm(form)
+        updateSettingsDb(SETTINGS)
+        VNA_WORKER.setSettings(SETTINGS.toRecordingSettings())
+        VNA_WORKER.getResult(DATA)
+        return redirect(f'/main')
+    settingsMdl.toForm(form)
     return render_template('settingsPage.html', form=form, name=current_user.email, id=current_user.id)
-
-
-def calib(*args):
-    time.sleep(10)
-    return True
-
-
-def getNewData(func, CalibrationVNA, DATA, *args):
-    # newDATA = processing.get_uncalibrated_s(func(*args))
-    measurData = func(*args)
-    #sMatr = Smatrixs()
-    CalibrationVNA.load_measurement_data(measurData)
-    CalibrationVNA.calculate_uncalibrated_s()
-    CalibrationVNA.apply_12term_errors()
-    #CalibrationVNA.interpolate_standarts()
-    #CalibrationVNA.calc_port_one_err()
-    #CalibrationVNA.apply_port_one_err()
-    sMatr = CalibrationVNA.get_calibrated_s()
-    #CalibrationVNA.debug_check(247)
-    #DATA.frequency = sMatr.frequency
-    DATA.S11 = list(map(abs, sMatr.S11))
-    DATA.S12 = list(map(abs, sMatr.S12))
-    DATA.S21 = list(map(abs, sMatr.S21))
-    DATA.S22 = list(map(abs, sMatr.S22))
-    print("NEW DATA:", DATA.__dict__)
-
-def getData(func, CalibrationVNA,DATA, *args):
-    # newDATA = processing.get_uncalibrated_s(func(*args))
-    measurData = func(*args)
-    sMatr = Smatrixs()
-    CalibrationVNA.load_measurement_data(measurData)
-    CalibrationVNA.calculate_uncalibrated_s()
-    CalibrationVNA.get_uncalibrated_s(measurData, sMatr)
-    DATA.frequency = sMatr.frequency
-    DATA.S11 = list(map(abs, sMatr.S11))
-    DATA.S12 = list(map(abs, sMatr.S12))
-    DATA.S21 = list(map(abs, sMatr.S21))
-    DATA.S22 = list(map(abs, sMatr.S22))
-    print("DATA:", DATA.__dict__)
-
-
-def getCallibHH(func, SETTINGS, *args):
-    result = func(*args)
-    if result:
-        SETTINGS.calib_HH = 0
-    else:
-        SETTINGS.calib_HH = 1
-
-
-def getCallibKZ(func, SETTINGS, *args):
-    result = func(*args)
-    if result:
-        SETTINGS.calib_KZ = 0
-    else:
-        SETTINGS.calib_KZ = 1
-
-
-def getCallibMatch(func, SETTINGS, *args):
-    result = func(*args)
-    if result:
-        SETTINGS.calib_Match = 0
-    else:
-        SETTINGS.calib_Match = 1
-
-
-def getCallibBolt(func, SETTINGS, *args):
-    result = func(*args)
-    if result:
-        SETTINGS.calib_Bolt = 0
-    else:
-        SETTINGS.calib_Bolt = 1
 
 
 # ------------------------  API LOGIC  ---------------------------
@@ -267,82 +135,58 @@ def calibration(DeviceVNA, data):
     return 1
 
 
-
-MATCH, KZ, HH, Bolt = VNAData(), VNAData(), VNAData(), VNAData()
+def setHH(value):
+    SETTINGS.calib_HH = value
 
 
 @app.get("/HH")
 def calib_HH():
-    global SETTINGS, EVENTS, MATCH, KZ, HH, DeviceVNA, CalibrationVNA
-    event = VNAEvent(func=lambda: getCallibHH(calibration,SETTINGS,DeviceVNA, HH), repeat=1, priority=3)
-    EVENTS.append(event)
+    VNA_WORKER.takeHH(setHH)
+    if SETTINGS.mode == 0:
+        VNA_WORKER.onePortCalibration()
+    else:
+        VNA_WORKER.dualPortCalibration()
     return jsonify('In process')
+
+
+def setKZ(value):
+    SETTINGS.calib_KZ = value
 
 
 @app.get("/KZ")
 def calib_KZ():
-    global SETTINGS, EVENTS, MATCH, KZ, HH, DeviceVNA, CalibrationVNA
-    event = VNAEvent(func=lambda: getCallibKZ(calibration,SETTINGS,DeviceVNA,KZ), repeat=1, priority=3)
-    EVENTS.append(event)
+    VNA_WORKER.takeKZ(setKZ)
+    if SETTINGS.mode == 0:
+        VNA_WORKER.onePortCalibration()
+    else:
+        VNA_WORKER.dualPortCalibration()
     return jsonify('In process')
+
+
+def setMatch(value):
+    SETTINGS.calib_Match = value
 
 
 @app.get("/Match")
 def calib_Match():
-    global SETTINGS, EVENTS, MATCH, KZ, HH, DeviceVNA, CalibrationVNA
-    event = VNAEvent(func=lambda: getCallibMatch(calibration,SETTINGS,DeviceVNA,MATCH), repeat=1, priority=3)
-    EVENTS.append(event)
-    if MATCH is not None and KZ is not None and HH is not None and Bolt is not None:
-        #дождаться пока будут получены измерения match
-        CalibrationVNA.load_port_one_calibration_standart_data(Open=HH, Short=KZ, Match=MATCH)
-        CalibrationVNA.load_port_two_calibration_standart_data(Open=HH, Short=KZ, Match=MATCH)
-        CalibrationVNA.load_thru_standart_data(Bolt)
-        CalibrationVNA.calculate_uncalibrated_s()
-        CalibrationVNA.interpolate_standarts()
-        CalibrationVNA.calc_12term_err()
-        CalibrationVNA.apply_12term_errors()
-        #event = VNAEvent(func=lambda: CalibrationVNA.interpolate_standarts(), repeat=1, priority=6)
-        #EVENTS.append(event)
-        #event = VNAEvent(func=lambda: CalibrationVNA.calc_port_one_err(), repeat=1, priority=5)
-        #EVENTS.append(event)
-        #event = VNAEvent(func=lambda: CalibrationVNA.apply_port_one_err(), repeat=1, priority=4)
-        #EVENTS.append(event)
-        event = VNAEvent(
-            func=lambda: getNewData(DeviceVNA.get_result, CalibrationVNA, DATA, ),
-            priority=3, timeEnd=datetime.now() + timedelta(minutes=5))
-        print("ADD EVENT:", event.__dict__)
-        EVENTS.append(event)
+    VNA_WORKER.takeMatch(setMatch)
+    if SETTINGS.mode == 0:
+        VNA_WORKER.onePortCalibration()
+    else:
+        VNA_WORKER.dualPortCalibration()
     return jsonify('In process')
+
+
+def setBolt(value):
+    SETTINGS.calib_Bolt = value
 
 
 @app.get("/Bolt")
 def calib_Bolt():
-    global SETTINGS, EVENTS, MATCH, KZ, HH, Bolt, DeviceVNA, CalibrationVNA
-    event = VNAEvent(func=lambda: getCallibBolt(calibration,SETTINGS,DeviceVNA,Bolt), repeat=1, priority=3)
-    EVENTS.append(event)
+    VNA_WORKER.takeBolt(setBolt)
+    if SETTINGS.mode == 1:
+        VNA_WORKER.dualPortCalibration()
     return jsonify('In process')
-
-
-@app.get("/api/userSettings")
-def get_user_settings():
-    return jsonify({"status": "not implemented"})
-
-
-@app.get("/api/currentSettings")
-def current_settings():
-    # TODO — вернуть настройки векторника
-    return jsonify({"status": "not implemented"})
-
-
-@app.get("/api/activeUser")
-def active_user():
-    # TODO — вернуть активного пользователя
-    return jsonify({"userId": -1, "nameUser": None})
-
-
-@app.get("/api/websocket")
-def websocket_info():
-    return jsonify({"host": "127.0.0.1", "port": 8765, "protocol": "websocket"})
 
 
 @login_manager.user_loader
@@ -360,11 +204,10 @@ def register():  # форма для регистрации
         if not form.passIsCorrect():
             return render_template('register.html', form=form, message="Пароли не совпадают", id=-247)
         db_sess = db_session.create_session()
-        if db_sess.query(User).filter(User.email == form.email.data).first():
+        if db_sess.query(User).filter(User.email == form.email.data).first() is not None:
+            db_sess.close()
             return render_template('register.html', form=form, message="Такой пользователь уже есть", id=-247)
-        user = User(email=form.email.data)
-        user.set_password(form.password.data)
-        db_sess.add(user)
+        db_sess.add(User(email=form.email.data).set_password(form.password.data))
         curUser = db_sess.query(User).filter(
             User.email == form.email.data and check_password_hash(User.hashed_password, form.password.data)).first()
         if curUser is not None:
@@ -411,12 +254,13 @@ def logout():
 
 
 def main():
+    log = logging.getLogger('werkzeug')
+    log.setLevel(logging.WARNING)
     port = 8000
     result = subprocess.run(['hostname', '-I'], capture_output=True, text=True)
     print("IP адреса:", *[f'\nhttp://{i}:{port}' for i in result.stdout.strip().split()])
     db_session.global_init("db/VNAData.db")
-    VNAThread = Thread(target=VNAWorker, args=(EVENTS,), daemon=True)
-    VNAThread.start()
+    VNA_WORKER.run()
     app.run(host="0.0.0.0", port=port, debug=True, use_reloader=False)
 
 

@@ -70,8 +70,8 @@ def _GetDefaultPaths():
         configFilePath = join(defaultBinPath, '.config')
         depLibPaths = [join(defaultBinPath, 'Qt5Core.dll'), join(defaultBinPath, 'libusb-1.0.dll')]
     elif platform.startswith('linux'):
-        libPath = join('/usr', 'lib1', 'vnakit', 'libVNAKit.so')
-        configFilePath = join('/etc', 'vnakit.conf')
+        libPath = join('../driver', 'libVNAKit.so')
+        configFilePath = join('../driver', 'vnakit.conf')
     else:
         return None, None, None
     return libPath, configFilePath, depLibPaths

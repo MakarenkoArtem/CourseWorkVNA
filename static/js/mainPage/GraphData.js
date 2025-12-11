@@ -7,7 +7,7 @@ export class GraphData{
 
         this.start = 0;
         this.finish = 200;
-        this.bottom = 0;
-        this.top = 10;
+        this.bottom = -60;
+        this.top = 2;
     }
 }

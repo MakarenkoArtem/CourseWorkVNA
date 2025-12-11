@@ -2,8 +2,8 @@ import time
 import numpy as np
 from dataclasses import dataclass
 from typing import List
-
-
+from driver.build.vnakit_py import *
+'''
 @dataclass
 class FrequencyRange:
     freq_start_mhz: float
@@ -29,7 +29,7 @@ class VNAData:
     b0_6: List[complex]
     b3_3: List[complex]
     b3_6: List[complex]
-
+'''
 
 def _generate_thousandth_signal(n_points: int) -> List[complex]:
     real = np.random.uniform(-0.01, 0.01, n_points)
@@ -46,17 +46,17 @@ def generate_vna_data(settings: RecordingSettings) -> VNAData:
     ).tolist()
 
     zero_vec = [0j] * n_freqs
-    data = VNAData(
-        frequency=freqs,
-        a0=zero_vec.copy(),
-        a3=zero_vec.copy(),
-        b0_3=zero_vec.copy(),
-        b0_6=zero_vec.copy(),
-        b3_3=zero_vec.copy(),
-        b3_6=zero_vec.copy()
-    )
+    data = VNAData()
+    data.frequency=freqs
+    data.a0=zero_vec.copy()
+    data.a3=zero_vec.copy()
+    data.b0_3=zero_vec.copy()
+    data.b0_6=zero_vec.copy()
+    data.b3_3=zero_vec.copy()
+    data.b3_6=zero_vec.copy()
 
-    time.sleep(20)
+
+    time.sleep(10)
 
     if settings.mode == 0:
         if settings.txtr == 3:
