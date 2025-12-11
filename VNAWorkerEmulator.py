@@ -19,19 +19,18 @@ DEVICE_SETTINGS = 10
 def eventLoop(worker):
     while worker.status:
         worker.events.sort(reverse=True)
-        # print(worker.curEvent.title, [i.title for i in worker.events])
         if worker.curEvent.inProcess():
             if len(worker.events) and worker.events[0].priority > worker.curEvent.priority:
                 worker.events.append(worker.curEvent)
                 worker.curEvent = worker.events.pop(0)
-                print("Берем более приоритетную задачу", worker.curEvent.title)
-                print("Задачи в очереди:", ", ".join([i.title for i in worker.events]))
+                print("Берем более приоритетную задачу:", worker.curEvent.title)
+                print("Задачи в очереди:",", ".join([i.title for i in worker.events]))
             worker.curEvent.func()
         else:
             if len(worker.events):
                 worker.curEvent = worker.events.pop(0)
                 print("Берем задачу:", worker.curEvent.title)
-                print("Задачи в очереди:", ", ".join([i.title for i in worker.events]))
+                print("Задачи в очереди:",", ".join([i.title for i in worker.events]))
             else:
                 sleep(0.5)
     worker.status = 1
@@ -111,7 +110,7 @@ class VNAWorker:
 
     def __getCalibrationTask(self, setData, setVal):
         global SETTINGS
-        setData(SETTINGS)
+        setData(generate_vna_data(SETTINGS))
         '''data.frequency = newData.frequency
         data.a0 = newData.a0
         data.b0_3 = newData.b0_3

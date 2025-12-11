@@ -18,12 +18,11 @@ DEVICE_SETTINGS = 10
 def eventLoop(worker):
     while worker.status:
         worker.events.sort(reverse=True)
-        # print(worker.curEvent.title, [i.title for i in worker.events])
         if worker.curEvent.inProcess():
             if len(worker.events) and worker.events[0].priority > worker.curEvent.priority:
                 worker.events.append(worker.curEvent)
                 worker.curEvent = worker.events.pop(0)
-                print("Берем более приоритетную задачу", worker.curEvent.title)
+                print("Берем более приоритетную задачу:", worker.curEvent.title)
                 print("Задачи в очереди:",", ".join([i.title for i in worker.events]))
             worker.curEvent.func()
         else:
