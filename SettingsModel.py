@@ -7,11 +7,18 @@ def get_nested_attr(obj, attr):
     return obj
 
 
+def set_nested_attr(obj, attr, value):
+    parts = attr.split('.')
+    for part in parts[:-1]:
+        obj = getattr(obj, part)
+    setattr(obj, parts[-1], value)
+
+
 def cpyData(source, obj, mapp):
     for source_key, target_key in mapp.items():
         try:
             value = get_nested_attr(source, source_key)
-            setattr(obj, target_key, value)
+            set_nested_attr(obj, target_key, value)
         except AttributeError as e:
             print(f"Error accessing attribute '{source_key}': {e}")
 
@@ -62,8 +69,8 @@ class SettingsModel:
                 'num_freq_points.data': 'num_freq_points', 'rbw_khz.data': 'rbw_khz',
                 'output_power_dbm.data': 'output_power_dbm', 'txtr.data': 'txtr', 'mode.data': 'mode'}
         cpyData(source=form, obj=self, mapp=mapp)
-        self.txtr = int(self.txtr)
-        self.mode = int(self.mode)
+        self.txtr = int(form.txtr.data)
+        self.mode = int(form.mode.data)
         return self
 
     def toForm(self, form):
@@ -71,6 +78,8 @@ class SettingsModel:
                 'num_freq_points': 'num_freq_points.data', 'rbw_khz': 'rbw_khz.data',
                 'output_power_dbm': 'output_power_dbm.data', 'txtr': 'txtr.data', 'mode': 'mode.data'}
         cpyData(source=self, obj=form, mapp=mapp)
+        form.txtr.data = str(form.txtr.data)
+        form.mode.data = str(form.mode.data)
         return form
 
     def toDict(self):

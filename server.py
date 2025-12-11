@@ -1,13 +1,14 @@
 import os
 import subprocess
-import time
 from datetime import datetime, timedelta
+import logging
 
 from flask import Flask, jsonify, send_from_directory, render_template, redirect
 from flask_cors import CORS
 from flask_login import LoginManager, current_user, login_user, login_required, logout_user
 from werkzeug.security import check_password_hash
 
+import processing
 from SettingsModel import SettingsModel
 from VNAWorker import VNAWorker
 from data import db_session
@@ -16,7 +17,6 @@ from data.users import User
 from driver.build.vnakit_py import *
 from forms.measure import MeasureForm
 from forms.user import RegisterForm, EntryForm
-import processing
 
 SETTINGS = SettingsModel()
 VNA_WORKER = VNAWorker()
@@ -59,6 +59,7 @@ def updateSettingsDb(settingsMdl):
     if settingsDB is None:
         return False
     settingsMdl.toDB(settingsDB)
+    db_sess.commit()
     db_sess.close()
     return True
 
@@ -87,89 +88,10 @@ def settings():  # форма для регистрации
         SETTINGS = SettingsModel(author_id=current_user.id).fromForm(form)
         updateSettingsDb(SETTINGS)
         VNA_WORKER.setSettings(SETTINGS.toRecordingSettings())
-        '''event = VNAEvent(func=lambda: getData(emulator.generate_vna_data, DATA, emulator.RecordingSettings(
-            freq_range=emulator.FrequencyRange(SETTINGS.freq_start_mhz, SETTINGS.freq_stop_mhz,
-                                               SETTINGS.num_freq_points),
-            rbw_khz=SETTINGS.rbw_khz, output_power_dbm=SETTINGS.output_power_dbm, txtr=SETTINGS.txtr,
-            mode=SETTINGS.mode)), timeEnd=datetime.now() + timedelta(minutes=5))
-        event = VNAEvent(
-            func=lambda: getData(DeviceVNA.get_result, CalibrationVNA, DATA),
-            timeEnd=datetime.now() + timedelta(minutes=5))
-        print("ADD EVENT:", event.__dict__)
-        EVENTS.append(event)'''
         VNA_WORKER.getResult(DATA)
         return redirect(f'/main')
     settingsMdl.toForm(form)
     return render_template('settingsPage.html', form=form, name=current_user.email, id=current_user.id)
-
-
-def calib(*args):
-    time.sleep(10)
-    return True
-
-
-def getNewData(func, CalibrationVNA, DATA, *args):
-    measurData = func(*args)
-    # sMatr = Smatrixs()
-    CalibrationVNA.load_measurement_data(measurData)
-    CalibrationVNA.calculate_uncalibrated_s()
-    CalibrationVNA.interpolate_standarts()
-    CalibrationVNA.calc_port_one_err()
-    CalibrationVNA.apply_port_one_err()
-    sMatr = CalibrationVNA.get_calibrated_s()
-    # CalibrationVNA.debug_check(247)
-    # DATA.frequency = sMatr.frequency
-    DATA.S11 = list(map(abs, sMatr.S11))
-    DATA.S12 = list(map(abs, sMatr.S11))
-    DATA.S21 = list(map(abs, sMatr.S11))
-    DATA.S22 = list(map(abs, sMatr.S11))
-    print("NEW DATA:", DATA.__dict__)
-
-
-def getData(func, CalibrationVNA, DATA, *args):
-    measurData = func(*args)
-    sMatr = Smatrixs()
-    CalibrationVNA.load_measurement_data(measurData)
-    CalibrationVNA.calculate_uncalibrated_s()
-    CalibrationVNA.get_uncalibrated_s(measurData, sMatr)
-    DATA.frequency = sMatr.frequency
-    DATA.S11 = list(map(abs, sMatr.S11))
-    DATA.S12 = list(map(abs, sMatr.S12))
-    DATA.S21 = list(map(abs, sMatr.S21))
-    DATA.S22 = list(map(abs, sMatr.S22))
-    print("DATA:", DATA.__dict__)
-
-
-def getCallibHH(func, SETTINGS, *args):
-    result = func(*args)
-    if result:
-        SETTINGS.calib_HH = 0
-    else:
-        SETTINGS.calib_HH = 1
-
-
-def getCallibKZ(func, SETTINGS, *args):
-    result = func(*args)
-    if result:
-        SETTINGS.calib_KZ = 0
-    else:
-        SETTINGS.calib_KZ = 1
-
-
-def getCallibMatch(func, SETTINGS, *args):
-    result = func(*args)
-    if result:
-        SETTINGS.calib_Match = 0
-    else:
-        SETTINGS.calib_Match = 1
-
-
-def getCallibBolt(func, SETTINGS, *args):
-    result = func(*args)
-    if result:
-        SETTINGS.calib_Bolt = 0
-    else:
-        SETTINGS.calib_Bolt = 1
 
 
 # ------------------------  API LOGIC  ---------------------------
@@ -213,29 +135,41 @@ def calibration(DeviceVNA, data):
     return 1
 
 
+def setHH(value):
+    SETTINGS.calib_HH = value
+
+
 @app.get("/HH")
 def calib_HH():
-    VNA_WORKER.takeHH()
+    VNA_WORKER.takeHH(setHH)
     if SETTINGS.mode == 0:
         VNA_WORKER.onePortCalibration()
     else:
         VNA_WORKER.dualPortCalibration()
     return jsonify('In process')
+
+
+def setKZ(value):
+    SETTINGS.calib_KZ = value
 
 
 @app.get("/KZ")
 def calib_KZ():
-    VNA_WORKER.takeKZ()
+    VNA_WORKER.takeKZ(setKZ)
     if SETTINGS.mode == 0:
         VNA_WORKER.onePortCalibration()
     else:
         VNA_WORKER.dualPortCalibration()
     return jsonify('In process')
+
+
+def setMatch(value):
+    SETTINGS.calib_Match = value
 
 
 @app.get("/Match")
 def calib_Match():
-    VNA_WORKER.takeMatch()
+    VNA_WORKER.takeMatch(setMatch)
     if SETTINGS.mode == 0:
         VNA_WORKER.onePortCalibration()
     else:
@@ -243,9 +177,13 @@ def calib_Match():
     return jsonify('In process')
 
 
+def setBolt(value):
+    SETTINGS.calib_Bolt = value
+
+
 @app.get("/Bolt")
 def calib_Bolt():
-    VNA_WORKER.takeBolt()
+    VNA_WORKER.takeBolt(setBolt)
     if SETTINGS.mode == 1:
         VNA_WORKER.dualPortCalibration()
     return jsonify('In process')
@@ -316,10 +254,13 @@ def logout():
 
 
 def main():
+    log = logging.getLogger('werkzeug')
+    log.setLevel(logging.WARNING)
     port = 8000
     result = subprocess.run(['hostname', '-I'], capture_output=True, text=True)
     print("IP адреса:", *[f'\nhttp://{i}:{port}' for i in result.stdout.strip().split()])
     db_session.global_init("db/VNAData.db")
+    VNA_WORKER.run()
     app.run(host="0.0.0.0", port=port, debug=True, use_reloader=False)
 
 

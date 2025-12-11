@@ -82,11 +82,14 @@ export class GraphicSParams {
         if (!(resp instanceof Response)) {
             throw new TypeError("Ожидается Response");
         }
+        // Функция для перевода мощности в децибелы
+        const toDecibels = (power) => 20 * Math.log10(power);
 
-        this.graphics[0][0].data=resp.sParams[0][0];
-        this.graphics[0][1].data=resp.sParams[0][1];
-        this.graphics[1][0].data=resp.sParams[1][0];
-        this.graphics[1][1].data=resp.sParams[1][1];
+        this.graphics[0][0].data=resp.sParams[0][0].map(toDecibels);
+        this.graphics[0][1].data=resp.sParams[0][1].map(toDecibels);
+        this.graphics[1][0].data=resp.sParams[1][0].map(toDecibels);
+        this.graphics[1][1].data=resp.sParams[1][1].map(toDecibels);
+
         Plotly.update(this.graphics[0][0].divId,
         {y: [this.graphics[0][0].data]}, {}, [0]);
         Plotly.update(this.graphics[0][1].divId,
