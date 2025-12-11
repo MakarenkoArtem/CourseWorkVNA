@@ -87,7 +87,7 @@ class VNAWorker:
             d=Smatrixs()
             self.CalibrationVNA.get_uncalibrated_s(measurData, d)
             sMatr = self.CalibrationVNA.get_calibrated_s()
-            sMatr = d
+            #sMatr = d
             sMatr.frequency=DATA.frequency
         DATA.frequency = sMatr.frequency
         DATA.S11 = list(map(abs, sMatr.S11))

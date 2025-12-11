@@ -72,7 +72,7 @@ VNAData VNAKitDevice::getResult() {
             measurement.a0.resize(nFreqs);
             measurement.b3_3.resize(nFreqs);
             measurement.b0_3.resize(nFreqs);
-            std::fill(measurement.a0.begin(), measurement.a3.begin() + nFreqs, 1);
+            std::fill(measurement.a0.begin(), measurement.a0.begin() + nFreqs, 1);
             std::fill(measurement.b0_3.begin(), measurement.b0_3.begin() + nFreqs, 1);
             std::fill(measurement.b3_3.begin(), measurement.b3_3.begin() + nFreqs, 1);
     	}

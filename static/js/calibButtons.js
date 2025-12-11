@@ -7,11 +7,11 @@ export function updateButtons(settings) {
         'Match': 'calib_Match',
         'Bolt': 'calib_Bolt'
     };
-    console.log(settings)
+    console.debug(settings)
     for (const [buttonId, settingKey] of Object.entries(buttonsMap)) {
         let button = document.getElementById(buttonId);
         if (button) { // Проверяем, существует ли кнопка
-            console.log(`Checking ${settingKey}: ${settings[settingKey]}`);
+            console.debug(`Checking ${settingKey}: ${settings[settingKey]}`);
             let newVal = settings[settingKey] == 1 ? 'btn btn-danger' : 'btn btn-success';
             // Устанавливаем класс кнопки в зависимости от значения настройки
             if (button.className != newVal){

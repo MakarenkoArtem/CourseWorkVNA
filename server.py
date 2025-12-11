@@ -79,7 +79,7 @@ def getSettingsMdlFromDB(author_id):
 @login_required
 def settings():  # форма для регистрации
     if cur_user().get_json()['remainingTime'] == -1:  # устройство занято другим пользователем
-        redirect("/main")
+        return redirect("/main")
     global activeSession, SETTINGS, DATA
     activeSession = {'user': current_user.id, 'time': datetime.now() + timedelta(minutes=5)}
     form = MeasureForm()
@@ -204,7 +204,7 @@ def register():  # форма для регистрации
         if not form.passIsCorrect():
             return render_template('register.html', form=form, message="Пароли не совпадают", id=-247)
         db_sess = db_session.create_session()
-        if db_sess.query(User).filter(User.email == form.email.data).first() is None:
+        if db_sess.query(User).filter(User.email == form.email.data).first() is not None:
             db_sess.close()
             return render_template('register.html', form=form, message="Такой пользователь уже есть", id=-247)
         db_sess.add(User(email=form.email.data).set_password(form.password.data))

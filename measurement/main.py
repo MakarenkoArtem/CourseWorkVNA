@@ -8,15 +8,15 @@ if __name__ == '__main__':
         vnakit.FrequencyRange(500.0, 6000.0, 1001),  # 51 точка, от 4125 до 6000 МГц
         10.0,  # Полоса пропускания (RBW) в КГц
         -10.0,  # Выходная мощность (дБм)
-        3,  # txtr — от 1 до 6
-        vnakit.VNAKIT_MODE_TWO_PORTS  # VNAKIT_MODE_TWO_PORTS  # Режим двухпортного измерения
+        6,  # txtr — от 1 до 6
+        vnakit.VNAKIT_MODE_ONE_PORT  # VNAKIT_MODE_TWO_PORTS  # Режим двухпортного измерения
     )
 
     vnakit.ApplySettings(vnaSettings)
     vnakit.Record()
 
     actual_freqs = vnakit.GetFreqVector_MHz()
-    with open("15db3.csv", "w") as file:
+    with open("cal.csv", "w") as file:
         recording = vnakit.GetRecordingResult()
         print(recording)
         #res = [recording[1][i] / recording[2][i] for i in range(len(recording[1]))]
