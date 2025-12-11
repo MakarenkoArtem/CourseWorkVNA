@@ -737,9 +737,11 @@
     // Применить ошибки (откалибровать)
     void VNACalibration::ApplyPortOneErr()
     {
+        calibratedS.frequency.resize(N);
         calibratedS.S11.clear();
         for (int i = 0; i < N; i++)
         {
+            calibratedS.frequency[i]=rawData.frequency[i];
             complex<double> Gm = uncalibratedS.S11[i];
             calibratedS.S11.push_back((Gm - firstPortE[i].ef00) / (Gm * firstPortE[i].ef11 - firstPortE[i].detEf));
         }
@@ -749,9 +751,11 @@
     
     void VNACalibration::ApplyPortTwoErr()
     {
+        calibratedS.frequency.resize(N);
         calibratedS.S22.clear();
         for (int i = 0; i < N; i++)
         {
+            calibratedS.frequency[i]=rawData.frequency[i];
             complex<double> Gm = uncalibratedS.S22[i];
             calibratedS.S22.push_back((Gm - secondPortE[i].ef00) / (Gm * secondPortE[i].ef11 - secondPortE[i].detEf));
         }
@@ -766,7 +770,8 @@
             cerr << "не посчитанны ошибки";
             return;
         }
-        
+
+        calibratedS.frequency.resize(N);
         calibratedS.S11.resize(N);
         calibratedS.S12.resize(N);
         calibratedS.S21.resize(N);
@@ -775,6 +780,7 @@
         complex<double> D;
         for (int i = 0; i < N; i++)
         {
+            calibratedS.frequency[i]=rawData.frequency[i];
             complex<double> S11m = uncalibratedS.S11[i], 
                             S21m = uncalibratedS.S21[i], 
                             S12m = uncalibratedS.S12[i], 
@@ -949,18 +955,18 @@
             cout << "Short=" << shortStandartp1.S[i] << " ";
             cout << "Match=" << matchStandartp1.S[i] << endl;
         }
-        /*cout << "Размеры стандартов второго порта:" << endl;
+        cout << "Размеры стандартов второго порта:" << endl;
         cout << "O: " << openStandartp2.S.size() << endl;
         cout << "S: " << shortStandartp2.S.size() << endl;
         cout << "M: " << matchStandartp2.S.size() << endl;
         cout << "Значения стандартов второго порта:" << endl;
-        for (int i = 0; i < min(5, N); i++) {
+        for (int i = 0; i < min(5, (int)openStandartp2.S.size()); i++) {
             cout << "Точка " << i << ": ";
             cout << "Open=" << openStandartp2.S[i] << " ";
             cout << "Short=" << shortStandartp2.S[i] << " ";
             cout << "Match=" << matchStandartp2.S[i] << endl;
         }
-        cout << endl;*/
+        cout << endl;
 
         cout << "проверяем неоткалиброванные S" << endl;
         cout << "количество частот: " << uncalibratedS.frequency.size() << endl;
@@ -980,20 +986,20 @@
         cout << "компоненты ошибки" << endl;
         cout << "количество по первому порту: " << firstPortE.size() << endl;
         cout << "количество по второму порту: " << secondPortE.size() << endl;
-        for (int i = 0; i < min(5, N); i++) {
+        for (int i = 0; i < min(5, (int)firstPortE.size()); i++) {
             cout << "Точка " << i << ":  ";
             cout << "  ef00 = " << firstPortE[i].ef00 << ",  ";
             cout << "  ef11 = " << firstPortE[i].ef11 << ",  ";
             cout << "  detEf = " << firstPortE[i].detEf << ",  "<< endl;
         }
         
-        /*for (int i = 0; i < min(5, N); i++) {
+        for (int i = 0; i < min(5, (int)secondPortE.size()); i++) {
             cout << "Точка " << i << ":  ";
             cout << "  er00 = " << secondPortE[i].ef00 << ",  ";
             cout << "  er11 = " << secondPortE[i].ef11 << ",  ";
             cout << "  detEr = " << secondPortE[i].detEf << ",  "<< endl;
         }
-        cout << endl;*/
+        cout << endl;
 
         cout << "проверяем откалиброванные S" << endl;
         cout << "количество частот: " << calibratedS.frequency.size() << endl;
@@ -1004,8 +1010,8 @@
         for (int i = 0; i < min(5, N); i++) {
             cout << "Точка " << i << ":  ";
             cout << "  S11 = " << calibratedS.S11[i] << ",  ";
-            //cout << "  S12 = " << calibratedS.S12[i] << ",  ";
-            //cout << "  S21 = " << calibratedS.S21[i] << ",  ";
+            cout << "  S12 = " << calibratedS.S12[i] << ",  ";
+            cout << "  S21 = " << calibratedS.S21[i] << ",  ";
             cout << "  S22 = " << calibratedS.S22[i] << ",  " << endl;
         }
 

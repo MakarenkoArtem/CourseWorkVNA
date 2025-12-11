@@ -2,7 +2,14 @@ from datetime import datetime, timedelta
 from threading import Thread
 from time import sleep
 from VNAEvent import VNAEvent
-from driver.build.vnakit_py import *
+
+DEBUG = False
+if DEBUG:
+    print("ЗАПУЩЕН ЭМУЛЯТОР ВЕКТОРНИКА")
+    from driver.build.vnakit_py import VNACalibration, RecordingSettings, VNAData, Smatrixs
+    from emulator import VNAKitDevice
+else:
+    from driver.build.vnakit_py import *
 
 OK = 0
 UNCALIBRATED = 0
@@ -23,13 +30,13 @@ def eventLoop(worker):
                 worker.events.append(worker.curEvent)
                 worker.curEvent = worker.events.pop(0)
                 print("Берем более приоритетную задачу:", worker.curEvent.title)
-                print("Задачи в очереди:",", ".join([i.title for i in worker.events]))
+                print("Задачи в очереди:", ", ".join([i.title for i in worker.events]))
             worker.curEvent.func()
         else:
             if len(worker.events):
                 worker.curEvent = worker.events.pop(0)
                 print("Берем задачу:", worker.curEvent.title)
-                print("Задачи в очереди:",", ".join([i.title for i in worker.events]))
+                print("Задачи в очереди:", ", ".join([i.title for i in worker.events]))
             else:
                 sleep(0.5)
     worker.status = 1
@@ -46,8 +53,10 @@ class VNAWorker:
         self.events = []
         self.curEvent = VNAEvent(int, priority=-1, title="Заглушка")
         self.MATCH, self.KZ, self.HH, self.BOLT = None, None, None, None
+        self.settings = RecordingSettings()
 
     def init(self, settings: RecordingSettings):
+        self.settings = settings
         self.DeviceVNA = VNAKitDevice(config_path="driver/vnakit.conf")
         self.DeviceVNA.init()
         self.setSettings(settings)
@@ -56,6 +65,7 @@ class VNAWorker:
         self.DeviceVNA.set_settings(settings)
         self.DeviceVNA.apply_settings()
         self.isInit = True
+        self.settings = settings
 
     def setSettings(self, settings: RecordingSettings):
         self.events.append(VNAEvent(lambda: self.__setSettingsTask(settings), priority=DEVICE_SETTINGS, repeat=1,
@@ -64,36 +74,29 @@ class VNAWorker:
     def __getResultTask(self, DATA):
         measurData = self.DeviceVNA.get_result()
         sMatr = Smatrixs()
+        #TODO проверить калибровки
         self.CalibrationVNA.load_measurement_data(measurData)
+        self.CalibrationVNA.calculate_uncalibrated_s()
         if self.calibration == UNCALIBRATED:
-            self.CalibrationVNA.calculate_uncalibrated_s()
             self.CalibrationVNA.get_uncalibrated_s(measurData, sMatr)
         elif self.calibration == ONE_PORT:
-            self.CalibrationVNA.interpolate_standarts()
-            self.CalibrationVNA.calc_port_one_err()
-            self.CalibrationVNA.apply_port_one_err()
-            d=Smatrixs()
-            self.CalibrationVNA.get_uncalibrated_s(measurData, d)
-            self.CalibrationVNA.calculate_uncalibrated_s()
+            #TODO проверить калибровки
+            if self.settings.txtr == 3:
+                self.CalibrationVNA.apply_port_one_err()
+            else:
+                self.CalibrationVNA.apply_port_two_err()
+            self.CalibrationVNA.write_calibrated_s("onePort.csv")
             sMatr = self.CalibrationVNA.get_calibrated_s()
-            #sMatr = d
-            sMatr.frequency=DATA.frequency
         elif self.calibration == DUAL_PORT:
-            self.CalibrationVNA.interpolate_standarts()
-            self.CalibrationVNA.calc_port_two_err()
-            self.CalibrationVNA.apply_port_two_err()
-            self.CalibrationVNA.calculate_uncalibrated_s()
-            d=Smatrixs()
-            self.CalibrationVNA.get_uncalibrated_s(measurData, d)
+            #TODO проверить калибровки
+            self.CalibrationVNA.apply_12term_errors()
+            self.CalibrationVNA.write_calibrated_s("dualPort.csv")
             sMatr = self.CalibrationVNA.get_calibrated_s()
-            #sMatr = d
-            sMatr.frequency=DATA.frequency
         DATA.frequency = sMatr.frequency
         DATA.S11 = list(map(abs, sMatr.S11))
         DATA.S12 = list(map(abs, sMatr.S12))
         DATA.S21 = list(map(abs, sMatr.S21))
         DATA.S22 = list(map(abs, sMatr.S22))
-        # print("DATA:", DATA.__dict__)
 
     def getResult(self, DATA: VNAData, seconds=300):
         self.stopGettingMeasurment()
@@ -109,13 +112,6 @@ class VNAWorker:
 
     def __getCalibrationTask(self, setData, setVal):
         setData(self.DeviceVNA.get_result())
-        '''data.frequency = newData.frequency
-        data.a0 = newData.a0
-        data.b0_3 = newData.b0_3
-        data.b3_3 = newData.b3_3
-        data.a3 = newData.a3
-        data.b0_6 = newData.b0_6
-        data.b3_6 = newData.b3_6'''
         setVal(OK)
         return 1
 
@@ -154,12 +150,20 @@ class VNAWorker:
     def __onePortCalibration(self):
         if None in [self.HH, self.KZ, self.MATCH]:
             return
-        self.CalibrationVNA.load_port_one_calibration_standart_data(Open=self.HH, Short=self.KZ, Match=self.MATCH)
-        self.CalibrationVNA.calculate_uncalibrated_s()
-        self.CalibrationVNA.interpolate_standarts()
-        self.CalibrationVNA.calc_port_one_err()
-        self.CalibrationVNA.apply_port_one_err()
-        self.calibration=ONE_PORT
+        #TODO проверить калибровки
+        if self.settings.txtr == 3:
+            self.CalibrationVNA.load_port_one_calibration_standart_data(Open=self.HH, Short=self.KZ, Match=self.MATCH)
+            self.CalibrationVNA.calculate_uncalibrated_s()
+            self.CalibrationVNA.interpolate_standarts()
+            self.CalibrationVNA.calc_port_one_err()
+            self.CalibrationVNA.apply_port_one_err()
+        else:
+            self.CalibrationVNA.load_port_two_calibration_standart_data(Open=self.HH, Short=self.KZ, Match=self.MATCH)
+            self.CalibrationVNA.calculate_uncalibrated_s()
+            self.CalibrationVNA.interpolate_standarts()
+            self.CalibrationVNA.calc_port_two_err()
+            self.CalibrationVNA.apply_port_two_err()
+        self.calibration = ONE_PORT
 
     def onePortCalibration(self):
         self.events.append(VNAEvent(func=lambda: self.__onePortCalibration(), repeat=1, priority=CALIBRATION,
@@ -171,21 +175,17 @@ class VNAWorker:
             return
         self.CalibrationVNA.load_port_one_calibration_standart_data(Open=self.HH, Short=self.KZ, Match=self.MATCH)
         self.CalibrationVNA.load_port_two_calibration_standart_data(Open=self.HH, Short=self.KZ, Match=self.MATCH)
-        if True:
-            self.CalibrationVNA.calculate_uncalibrated_s()
-            self.CalibrationVNA.interpolate_standarts()
-            self.CalibrationVNA.calc_port_two_err()
-            self.CalibrationVNA.apply_port_two_err()
-            self.calibration=DUAL_PORT
-        else:
-            self.CalibrationVNA.load_thru_standart_data(self.BOLT)
-            self.CalibrationVNA.calculate_uncalibrated_s()
-            self.CalibrationVNA.interpolate_standarts()
-            self.CalibrationVNA.calc_12term_err()
-            self.CalibrationVNA.apply_12term_errors()
+        self.CalibrationVNA.load_thru_standart_data(thruData=self.BOLT)
+        self.CalibrationVNA.calculate_uncalibrated_s()
+        self.CalibrationVNA.interpolate_standarts()
+        #TODO проверить калибровки
+        self.CalibrationVNA.calc_12term_err()
+        self.CalibrationVNA.apply_12term_errors()
+        self.calibration = DUAL_PORT
 
     def dualPortCalibration(self):
-        self.events.append(VNAEvent(func=lambda: self.__dualPortCalibration(), repeat=1, priority=CALIBRATION, title="Двупортовая каллибровка"))
+        self.events.append(VNAEvent(func=lambda: self.__dualPortCalibration(), repeat=1, priority=CALIBRATION,
+                                    title="Двупортовая каллибровка"))
         return True
 
     def run(self):

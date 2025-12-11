@@ -1,14 +1,13 @@
+import logging
 import os
 import subprocess
 from datetime import datetime, timedelta
-import logging
 
 from flask import Flask, jsonify, send_from_directory, render_template, redirect
 from flask_cors import CORS
 from flask_login import LoginManager, current_user, login_user, login_required, logout_user
 from werkzeug.security import check_password_hash
 
-import processing
 from SettingsModel import SettingsModel
 from VNAWorker import VNAWorker
 from data import db_session
@@ -22,7 +21,12 @@ SETTINGS = SettingsModel()
 VNA_WORKER = VNAWorker()
 VNA_WORKER.init(SETTINGS.toRecordingSettings())
 CalibrationVNA = VNACalibration()
-DATA = processing.Smatrixs(frequency=[], S11=[], S12=[], S21=[], S22=[])
+DATA = Smatrixs()
+DATA.frequency = []
+DATA.S11 = []
+DATA.S12 = []
+DATA.S21 = []
+DATA.S22 = []
 activeSession = {}
 
 app = Flask(__name__, )
@@ -54,14 +58,15 @@ def home(idMeasure=None):
 
 
 def updateSettingsDb(settingsMdl):
+    res = False
     db_sess = db_session.create_session()
     settingsDB = db_sess.query(Setting).filter(Setting.author_id == settingsMdl.author_id).first()
-    if settingsDB is None:
-        return False
-    settingsMdl.toDB(settingsDB)
-    db_sess.commit()
+    if settingsDB is not None:
+        settingsMdl.toDB(settingsDB)
+        db_sess.commit()
+        res = True
     db_sess.close()
-    return True
+    return res
 
 
 def getSettingsMdlFromDB(author_id):
@@ -70,6 +75,7 @@ def getSettingsMdlFromDB(author_id):
     if settingsDB is None:
         settingsDB = SettingsModel(author_id=current_user.id).toDB(Setting())
         db_sess.add(settingsDB)
+        db_sess.commit()
     settingsMdl = SettingsModel().fromDB(settingsDB)
     db_sess.close()
     return settingsMdl
@@ -100,14 +106,21 @@ def get_data():
     global DATA
     if DATA is None:
         return {}
-    return jsonify(DATA.__dict__)
+    return jsonify({
+        "frequency": DATA.frequency,
+        "S11": [abs(x) for x in DATA.S11],
+        "S12": [abs(x) for x in DATA.S12],
+        "S21": [abs(x) for x in DATA.S21],
+        "S22": [abs(x) for x in DATA.S22],
+    })
 
 
 @app.get("/api/time_user")
 def cur_user():
     global activeSession
     if activeSession == {} or current_user.is_anonymous:
-        return jsonify({"remainingTime": 0})  # если remainingTime 0 устройство свободно, если -1 у другого пользователя
+        return jsonify(
+            {"remainingTime": 0})  # если remainingTime 0 устройство свободно, если -1 у другого пользователя
     delta = ((activeSession['time'] - datetime.now()).total_seconds() + 59) // 60
     if delta < 0:
         activeSession = {}
