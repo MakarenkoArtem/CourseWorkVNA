@@ -14,31 +14,6 @@
 </style>
 <form action="" method="post" enctype="multipart/form-data">
     <h2 class="mb-3 text-center">Настройки ВАЦ</h2>
-    <!--div>
-        <h4>Калибровки</h4>
-        <div class="mb-3 d-flex justify-content-between">
-            <button class="btn btn-primary" id="HH" onclick="calibration('HH')" type="button">
-                <span class="spinner-grow spinner-grow-sm" role="status" aria-hidden="true" id="loader-HH"
-                      style="display: none;"></span>
-                ХХ
-            </button>
-            <button class="btn btn-primary" id="KZ" type="button" onclick="calibration('KZ')">
-                <span class="spinner-grow spinner-grow-sm" role="status" aria-hidden="true" id="loader-KZ"
-                      style="display: none;"></span>
-                КЗ
-            </button>
-            <button class="btn btn-primary" id="Match" type="button" onclick="calibration('Match')">
-                <span class="spinner-grow spinner-grow-sm" role="status" aria-hidden="true" id="loader-Match"
-                      style="display: none;"></span>
-                Нагрузка
-            </button>
-            <button class="btn btn-primary" id="Bolt" type="button" onclick="calibration('Bolt')">
-                <span class="spinner-grow spinner-grow-sm" role="status" aria-hidden="true" id="loader-Bolt"
-                      style="display: none;"></span>
-                Болт
-            </button>
-        </div>
-    </div-->
     {{ form.hidden_tag() }}
     <p style="margin-bottom: 0px;">
         {{ form.freq_start_mhz.label(style="margin-bottom: 5px;") }}<br>
@@ -63,21 +38,21 @@
     </p>
     <p style="margin-bottom: 0px;">
         {{ form.rbw_khz.label(style="margin-bottom: 5px;") }}<br>
-        {{ form.rbw_khz(class="form-control") }}<br>
+        {{ form.rbw_khz(class="form-control", type="number") }}<br>
         {% for error in form.rbw_khz.errors %}
     <p class="alert alert-danger" role="alert">{{ error }}</p>
     {% endfor %}
     </p>
     <p style="margin-bottom: 0px;">
         {{ form.output_power_dbm.label(style="margin-bottom: 5px;") }}<br>
-        {{ form.output_power_dbm(class="form-control") }}<br>
+        {{ form.output_power_dbm(class="form-control", type="double") }}<br>
         {% for error in form.output_power_dbm.errors %}
     <p class="alert alert-danger" role="alert">{{ error }}</p>
     {% endfor %}
     </p>
     <p style="margin-bottom: 0px;">
         {{ form.txtr.label(style="margin-bottom: 5px;") }}<br>
-        {{ form.txtr(class="form-control", type="number") }}<br>
+        {{ form.txtr(class="form-control") }}<br>
         {% for error in form.txtr.errors %}
     <p class="alert alert-danger" role="alert">{{ error }}</p>
     {% endfor %}
@@ -88,14 +63,29 @@
         {% for error in form.mode.errors %}
     <p class="alert alert-danger" role="alert">{{ error }}</p>
     {% endfor %}
-    </p>
 
-    <a href="/main" style="float: left;" class="btn btn-danger">Назад</a>
-    <p align="right">{{ form.measure(class="btn btn-primary")}}</p>
+    {% for error in form.delay.errors %}
+    <p class="alert alert-danger" role="alert">{{ error }}</p>
+    {% endfor %}
+    </p>
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <a href="/main" class="btn btn-danger">Назад</a>
+        <div style="width: auto;display: flex; align-items: center">
+
+        <label style="margin-right: 5px;">{{ form.delay.label.text }} </label>
+
+        <div class="input-group" style="width: auto;display: flex; align-items: center">
+            {{ form.delay(class="form-control", type="number",
+                          style="width: 80px !important; flex: 0 0 80px !important;") }}
+            {{ form.measure(class="btn btn-primary") }}
+        </div>
+        </div>
+    </div>
+
 </form>
 <script type="module" src="/static/js/settingsPage/main.js" defer></script>
 {% endblock %}
 
 {% block calibration %}
-    {% include 'calibration.html' %}
+{% include 'calibration.html' %}
 {% endblock %}

@@ -1,6 +1,6 @@
 import {Client} from '../Client.js'
 import {SettingsVNA} from '../SettingsVNA.js'
-import {updateButtons,calibration} from '../calibButtons.js'
+import {updateButtons,calibration, decalibration} from '../calibButtons.js'
 
 function formatTime(time) {
     const formattedMinutes = String(Math.floor(time / 60)).padStart(2, '0');
@@ -36,7 +36,6 @@ async function loop() {
     while (1){
         try{
             let time = await client.getRemainingTime()
-            console.log("TIME:", time)
             updateBar(time)
             let isChanged = settings.update(await client.getSettings())
             updateButtons(await client.getSettings())

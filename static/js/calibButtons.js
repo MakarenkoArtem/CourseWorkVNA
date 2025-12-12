@@ -5,7 +5,7 @@ const UNCALIBRATED=5
 const classNames = {
 [CALIBRATED]:'btn btn-success',
 [UNCORRECTED_CALIBRATION]:'btn btn-warning',
-[CALIBRATING]:'btn btn-info',
+[CALIBRATING]:'btn btn-warning',//'btn btn-info',
 [UNCALIBRATED]:'btn btn-danger'
 }
 export function updateButtons(settings) {
@@ -49,4 +49,15 @@ export async function calibration(buttonId, client){
         console.error("Error sending request to:", error);
     }
 }
+
+export async function decalibration(client){
+    try {
+        const result = await client.getJSON(`/decalibrate`)
+        console.log(`Response from /decalibrate`, result);
+    } catch (error) {
+        console.error("Error sending request to:", error);
+    }
+}
+
 window.calibration = calibration;
+window.decalibration = decalibration;

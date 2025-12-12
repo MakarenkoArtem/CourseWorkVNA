@@ -3,7 +3,7 @@ import {Response} from '../Response.js'
 import {SettingsVNA} from '../SettingsVNA.js'
 import {GraphicSParams} from './GraphicSParams.js'
 import {GraphData} from './GraphData.js'
-import {updateButtons, calibration} from '../calibButtons.js'
+import {updateButtons, calibration, decalibration} from '../calibButtons.js'
 
 // --- ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ---
 const settings = new SettingsVNA();
@@ -45,7 +45,6 @@ async function loop() {
     while (1){
         try{
             let time = await client.getRemainingTime()
-            console.log("TIME:", time)
             updateBar(time)
             let isChanged = settings.update(await client.getSettings())
             updateButtons(await client.getSettings())

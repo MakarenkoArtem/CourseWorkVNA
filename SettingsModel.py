@@ -22,10 +22,13 @@ def cpyData(source, obj, mapp):
             set_nested_attr(obj, target_key, value)
         except AttributeError as e:
             print(f"Error accessing attribute '{source_key}': {e}")
-CALIBRATED=0
-UNCORRECTED_CALIBRATION=3
-CALIBRATING=4
-UNCALIBRATED=5
+
+
+CALIBRATED = 0
+UNCORRECTED_CALIBRATION = 3
+CALIBRATING = 4
+UNCALIBRATED = 5
+
 
 class SettingsModel:
     def __init__(self, author_id=-1):

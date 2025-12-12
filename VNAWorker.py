@@ -19,11 +19,12 @@ CalibrationVNA = VNACalibration()
 GETTING_DATA = 0
 CALIBRATION = 5
 MEASURE_FOR_CALIBRATION = 6
+DECALIBRATION = 7
 DEVICE_SETTINGS = 10
 
 
 def eventLoop(worker):
-    while worker.status:
+    while worker.isRunning:
         worker.events.sort(reverse=True)
         if worker.curEvent.inProcess():
             if len(worker.events) and worker.events[0].priority > worker.curEvent.priority:
@@ -39,14 +40,14 @@ def eventLoop(worker):
                 print("Задачи в очереди:", ", ".join([i.title for i in worker.events]))
             else:
                 sleep(0.5)
-    worker.status = 1
+    worker.isRunning = 1
 
 
 class VNAWorker:
     def __init__(self):
         self.isInit = False
         self.thread = None
-        self.status = 1
+        self.isRunning = 1
         self.calibration = UNCALIBRATED
         self.DeviceVNA = None
         self.CalibrationVNA = VNACalibration()
@@ -176,7 +177,7 @@ class VNAWorker:
 
     def onePortCalibration(self):
         self.events.append(VNAEvent(func=lambda: self.__onePortCalibration(), repeat=1, priority=CALIBRATION,
-                                    title="Однопортовая каллибровка"))
+                                    title="Однопортовая калибровка"))
         return True
 
     def __dualPortCalibration(self):
@@ -197,12 +198,21 @@ class VNAWorker:
 
     def dualPortCalibration(self):
         self.events.append(VNAEvent(func=lambda: self.__dualPortCalibration(), repeat=1, priority=CALIBRATION,
-                                    title="Двупортовая каллибровка"))
+                                    title="Двухпортовая калибровка"))
         return True
+
+    def __decalibrateTask(self):
+        self.calibration = UNCALIBRATED
+        self.MATCH, self.KZ, self.HH, self.BOLT, self.MATCH_DUAL = None, None, None, None, None
+        self.events = [event for event in self.events if event.priority != CALIBRATION]
+
+    def decalibrate(self):
+        self.events.append(VNAEvent(func=lambda: self.__decalibrateTask(), repeat=1, priority=DECALIBRATION,
+                                    title="Декалибровка"))
 
     def run(self):
         if self.thread is not None:
-            self.status = 0
+            self.isRunning = 0
             self.thread.join()
         self.thread = Thread(target=eventLoop, args=(self,), daemon=True)
         self.thread.start()

@@ -2,6 +2,7 @@ import logging
 import os
 import subprocess
 from datetime import datetime, timedelta
+from functools import wraps
 
 from flask import Flask, jsonify, send_from_directory, render_template, redirect
 from flask_cors import CORS
@@ -16,6 +17,44 @@ from data.users import User
 from driver.build.vnakit_py import *
 from forms.measure import MeasureForm
 from forms.user import RegisterForm, EntryForm
+
+
+def check_active_user(func):
+    """
+    Декоратор: разрешает вызов если
+      - activeSession пустой (устройство свободно), или
+      - activeSession['user'] == current_user.id
+    Иначе возвращает {"error": "..."} с кодом 403.
+    Использовать после @login_required.
+    """
+
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        global activeSession
+
+        # если пользователь не авторизован — 401
+        if current_user.is_anonymous:
+            return jsonify({"error": "unauthenticated"}), 401
+
+        # Если activeSession пустой/None — устройство свободно -> разрешаем
+        if not activeSession:
+            return func(*args, **kwargs)
+
+        try:
+            session_user = int(activeSession.get("user"))
+        except Exception:
+            return jsonify({"error": "invalid activeSession format"}), 500
+
+        if session_user == int(current_user.id):
+            return func(*args, **kwargs)
+        return jsonify({
+            "error": "device_in_use",
+            "message": "Устройство сейчас используется другим пользователем",
+            "userId": session_user
+        }), 403
+
+    return wrapper
+
 
 SETTINGS = SettingsModel()
 VNA_WORKER = VNAWorker()
@@ -40,10 +79,27 @@ login_manager.login_view = '/'
 CORS(app)  # как allow_origins=["*"] в FastAPI
 
 
-# Static mounts (как app.mount в FastAPI)
 @app.route('/lib/<path:path>')
 def send_lib(path):
     return send_from_directory('static/lib', path)
+
+
+@app.errorhandler(500)
+def not_found(error):
+    try:
+        id = current_user.id
+    except AttributeError:
+        id = 0
+    return render_template("500.html", id=id)
+
+
+@app.errorhandler(404)
+def not_found(error):
+    try:
+        id = current_user.id
+    except AttributeError:
+        id = 0
+    return render_template("404.html", id=id)
 
 
 # ------------------------  TEMPLATES  ---------------------------
@@ -87,16 +143,15 @@ def settings():  # форма для регистрации
     if cur_user().get_json()['remainingTime'] == -1:  # устройство занято другим пользователем
         return redirect("/main")
     global activeSession, SETTINGS, DATA
-    activeSession = {'user': current_user.id, 'time': datetime.now() + timedelta(minutes=15)}
     form = MeasureForm()
     settingsMdl = getSettingsMdlFromDB(current_user.id)
     if form.validate_on_submit():
-        # SETTINGS = SettingsModel(author_id=current_user.id).fromForm(form)
-        SETTINGS.fromForm(form)
+        activeSession = {'user': current_user.id, 'time': datetime.now() + timedelta(minutes=form.delay.data)}
         SETTINGS.author_id = current_user.id
+        SETTINGS.fromForm(form)
         updateSettingsDb(SETTINGS)
         VNA_WORKER.setSettings(SETTINGS.toRecordingSettings())
-        VNA_WORKER.getResult(DATA, seconds=15 * 60)
+        VNA_WORKER.getResult(DATA, seconds=form.delay.data * 60)
         return redirect(f'/main')
     settingsMdl.toForm(form)
     return render_template('settingsPage.html', form=form, name=current_user.email, id=current_user.id,
@@ -122,8 +177,7 @@ def get_data():
 def cur_user():
     global activeSession
     if activeSession == {} or current_user.is_anonymous:
-        return jsonify(
-            {"remainingTime": 0})  # если remainingTime 0 устройство свободно, если -1 у другого пользователя
+        return jsonify({"remainingTime": 0})
     delta = ((activeSession['time'] - datetime.now()).total_seconds() + 59) // 60
     if delta < 0:
         activeSession = {}
@@ -156,6 +210,7 @@ def setHH(value):
 
 
 @app.get("/HH")
+@check_active_user
 def calib_HH():
     SETTINGS.calib_HH = CALIBRATING
     VNA_WORKER.takeHH(setHH)
@@ -171,6 +226,7 @@ def setKZ(value):
 
 
 @app.get("/KZ")
+@check_active_user
 def calib_KZ():
     SETTINGS.calib_KZ = CALIBRATING
     VNA_WORKER.takeKZ(setKZ)
@@ -186,6 +242,7 @@ def setMatch(value):
 
 
 @app.get("/Match")
+@check_active_user
 def calib_Match():
     SETTINGS.calib_Match = CALIBRATING
     VNA_WORKER.takeMatch(setMatch)
@@ -201,6 +258,7 @@ def setMatchDual(value):
 
 
 @app.get("/MatchDual")
+@check_active_user
 def calib_Match_Dual():
     SETTINGS.calib_Match_Dual = CALIBRATING
     if SETTINGS.mode == 0:
@@ -215,12 +273,25 @@ def setBolt(value):
 
 
 @app.get("/Bolt")
+@check_active_user
 def calib_Bolt():
     if SETTINGS.mode == 0:
         return jsonify('Set one port calibration')
     VNA_WORKER.takeBolt(setBolt)
     VNA_WORKER.dualPortCalibration()
     return jsonify('In process')
+
+
+@app.get("/decalibrate")
+@check_active_user
+def decalibrate():
+    VNA_WORKER.decalibrate()
+    SETTINGS.calib_KZ = UNCALIBRATED
+    SETTINGS.calib_HH = UNCALIBRATED
+    SETTINGS.calib_Match = UNCALIBRATED
+    SETTINGS.calib_Bolt = UNCALIBRATED
+    SETTINGS.calib_Match_Dual = UNCALIBRATED
+    return jsonify({'data': 'OK'})
 
 
 @login_manager.user_loader
@@ -231,7 +302,7 @@ def load_user(user_id):
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():  # форма для регистрации
-    if current_user.is_authenticated:  # устройство занято другим пользователем
+    if current_user.is_authenticated:  # переадресация авторизованных пользователей
         return redirect("/main")
     form = RegisterForm()
     if form.validate_on_submit():
