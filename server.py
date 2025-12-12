@@ -8,7 +8,7 @@ from flask_cors import CORS
 from flask_login import LoginManager, current_user, login_user, login_required, logout_user
 from werkzeug.security import check_password_hash
 
-from SettingsModel import SettingsModel
+from SettingsModel import *
 from VNAWorker import VNAWorker
 from data import db_session
 from data.settings import Setting
@@ -54,7 +54,7 @@ def home(idMeasure=None):
         id, name = current_user.id, current_user.email
     except AttributeError:
         id, name = 0, ''
-    return render_template("mainPage.html", id=id, name=name, idMeasure=idMeasure)
+    return render_template("mainPage.html", id=id, name=name, idMeasure=idMeasure, dualPort=SETTINGS.mode)
 
 
 def updateSettingsDb(settingsMdl):
@@ -87,17 +87,20 @@ def settings():  # форма для регистрации
     if cur_user().get_json()['remainingTime'] == -1:  # устройство занято другим пользователем
         return redirect("/main")
     global activeSession, SETTINGS, DATA
-    activeSession = {'user': current_user.id, 'time': datetime.now() + timedelta(minutes=5)}
+    activeSession = {'user': current_user.id, 'time': datetime.now() + timedelta(minutes=15)}
     form = MeasureForm()
     settingsMdl = getSettingsMdlFromDB(current_user.id)
     if form.validate_on_submit():
-        SETTINGS = SettingsModel(author_id=current_user.id).fromForm(form)
+        # SETTINGS = SettingsModel(author_id=current_user.id).fromForm(form)
+        SETTINGS.fromForm(form)
+        SETTINGS.author_id = current_user.id
         updateSettingsDb(SETTINGS)
         VNA_WORKER.setSettings(SETTINGS.toRecordingSettings())
-        VNA_WORKER.getResult(DATA)
+        VNA_WORKER.getResult(DATA, seconds=15 * 60)
         return redirect(f'/main')
     settingsMdl.toForm(form)
-    return render_template('settingsPage.html', form=form, name=current_user.email, id=current_user.id)
+    return render_template('settingsPage.html', form=form, name=current_user.email, id=current_user.id,
+                           dualPort=SETTINGS.mode)
 
 
 # ------------------------  API LOGIC  ---------------------------
@@ -154,6 +157,7 @@ def setHH(value):
 
 @app.get("/HH")
 def calib_HH():
+    SETTINGS.calib_HH = CALIBRATING
     VNA_WORKER.takeHH(setHH)
     if SETTINGS.mode == 0:
         VNA_WORKER.onePortCalibration()
@@ -168,6 +172,7 @@ def setKZ(value):
 
 @app.get("/KZ")
 def calib_KZ():
+    SETTINGS.calib_KZ = CALIBRATING
     VNA_WORKER.takeKZ(setKZ)
     if SETTINGS.mode == 0:
         VNA_WORKER.onePortCalibration()
@@ -182,11 +187,26 @@ def setMatch(value):
 
 @app.get("/Match")
 def calib_Match():
+    SETTINGS.calib_Match = CALIBRATING
     VNA_WORKER.takeMatch(setMatch)
     if SETTINGS.mode == 0:
         VNA_WORKER.onePortCalibration()
     else:
         VNA_WORKER.dualPortCalibration()
+    return jsonify('In process')
+
+
+def setMatchDual(value):
+    SETTINGS.calib_Match_Dual = value
+
+
+@app.get("/MatchDual")
+def calib_Match_Dual():
+    SETTINGS.calib_Match_Dual = CALIBRATING
+    if SETTINGS.mode == 0:
+        return jsonify('Set one port calibration')
+    VNA_WORKER.takeMatch(setMatchDual)
+    VNA_WORKER.dualPortCalibration()
     return jsonify('In process')
 
 
@@ -196,9 +216,10 @@ def setBolt(value):
 
 @app.get("/Bolt")
 def calib_Bolt():
+    if SETTINGS.mode == 0:
+        return jsonify('Set one port calibration')
     VNA_WORKER.takeBolt(setBolt)
-    if SETTINGS.mode == 1:
-        VNA_WORKER.dualPortCalibration()
+    VNA_WORKER.dualPortCalibration()
     return jsonify('In process')
 
 

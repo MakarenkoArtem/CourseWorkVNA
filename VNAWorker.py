@@ -52,7 +52,7 @@ class VNAWorker:
         self.CalibrationVNA = VNACalibration()
         self.events = []
         self.curEvent = VNAEvent(int, priority=-1, title="Заглушка")
-        self.MATCH, self.KZ, self.HH, self.BOLT = None, None, None, None
+        self.MATCH, self.KZ, self.HH, self.BOLT, self.MATCH_DUAL = None, None, None, None, None
         self.settings = RecordingSettings()
 
     def init(self, settings: RecordingSettings):
@@ -74,13 +74,13 @@ class VNAWorker:
     def __getResultTask(self, DATA):
         measurData = self.DeviceVNA.get_result()
         sMatr = Smatrixs()
-        #TODO проверить калибровки
+        # TODO проверить калибровки
         self.CalibrationVNA.load_measurement_data(measurData)
         self.CalibrationVNA.calculate_uncalibrated_s()
         if self.calibration == UNCALIBRATED:
             self.CalibrationVNA.get_uncalibrated_s(measurData, sMatr)
         elif self.calibration == ONE_PORT:
-            #TODO проверить калибровки
+            # TODO проверить калибровки
             if self.settings.txtr == 3:
                 self.CalibrationVNA.apply_port_one_err()
             else:
@@ -88,7 +88,7 @@ class VNAWorker:
             self.CalibrationVNA.write_calibrated_s("onePort.csv")
             sMatr = self.CalibrationVNA.get_calibrated_s()
         elif self.calibration == DUAL_PORT:
-            #TODO проверить калибровки
+            # TODO проверить калибровки
             self.CalibrationVNA.apply_12term_errors()
             self.CalibrationVNA.write_calibrated_s("dualPort.csv")
             sMatr = self.CalibrationVNA.get_calibrated_s()
@@ -98,7 +98,7 @@ class VNAWorker:
         DATA.S21 = list(map(abs, sMatr.S21))
         DATA.S22 = list(map(abs, sMatr.S22))
 
-    def getResult(self, DATA: VNAData, seconds=300):
+    def getResult(self, DATA: Smatrixs, seconds=300):
         self.stopGettingMeasurment()
         self.events.append(VNAEvent(lambda: self.__getResultTask(DATA), priority=GETTING_DATA,
                                     timeEnd=datetime.now() + timedelta(seconds=seconds), title="Получение значений"))
@@ -124,6 +124,9 @@ class VNAWorker:
     def setMatch(self, data):
         self.MATCH = data
 
+    def setMatchDual(self, data):
+        self.MATCH_DUAL = data
+
     def setBolt(self, data):
         self.BOLT = data
 
@@ -147,10 +150,16 @@ class VNAWorker:
             VNAEvent(func=lambda: self.__getCalibrationTask(self.setBolt, setVal), repeat=1,
                      priority=MEASURE_FOR_CALIBRATION, title="Измерение Болт"))
 
+    def takeMatchDual(self, setVal):  # передаем в списке переменную которую поменять в результате
+        self.events.append(
+            VNAEvent(func=lambda: self.__getCalibrationTask(self.setMatchDual, setVal), repeat=1,
+                     priority=MEASURE_FOR_CALIBRATION, title="Измерение Нагрузка"))
+
     def __onePortCalibration(self):
         if None in [self.HH, self.KZ, self.MATCH]:
             return
-        #TODO проверить калибровки
+        self.CalibrationVNA.load_measurement_data(self.DeviceVNA.get_result())
+        # TODO проверить калибровки
         if self.settings.txtr == 3:
             self.CalibrationVNA.load_port_one_calibration_standart_data(Open=self.HH, Short=self.KZ, Match=self.MATCH)
             self.CalibrationVNA.calculate_uncalibrated_s()
@@ -171,14 +180,17 @@ class VNAWorker:
         return True
 
     def __dualPortCalibration(self):
-        if None in [self.HH, self.KZ, self.MATCH, self.BOLT]:
+        if None in [self.HH, self.KZ, self.BOLT, self.MATCH]:
             return
+        self.CalibrationVNA.load_measurement_data(self.DeviceVNA.get_result())
         self.CalibrationVNA.load_port_one_calibration_standart_data(Open=self.HH, Short=self.KZ, Match=self.MATCH)
         self.CalibrationVNA.load_port_two_calibration_standart_data(Open=self.HH, Short=self.KZ, Match=self.MATCH)
         self.CalibrationVNA.load_thru_standart_data(thruData=self.BOLT)
+        if self.MATCH_DUAL is not None:
+            self.CalibrationVNA.load_two_match_standart_data(self.MATCH_DUAL)
         self.CalibrationVNA.calculate_uncalibrated_s()
         self.CalibrationVNA.interpolate_standarts()
-        #TODO проверить калибровки
+        # TODO проверить калибровки
         self.CalibrationVNA.calc_12term_err()
         self.CalibrationVNA.apply_12term_errors()
         self.calibration = DUAL_PORT

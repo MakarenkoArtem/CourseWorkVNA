@@ -53,7 +53,6 @@ export class GraphicSParams {
     }
 
     updateScale(graphData){
-    console.log(this.settings)
     const minF =this.settings.minFrequency
     const maxF = this.settings.maxFrequency
     const countPoints = this.settings.countPoints

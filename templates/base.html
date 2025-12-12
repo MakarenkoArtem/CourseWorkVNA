@@ -28,20 +28,25 @@
             </button>
         {% block calibration %}
         {% endblock %}
-        <div class="dropdown" style="margin-right:15px">
-            <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown"
-                    aria-expanded="false">
-                <img src="/static/img/user_images/0.png" align="right" alt="" style="width: 40px; height: 40px;"
-                     class="round">
+        <div style="display: flex;">
+            <button class="btn btn-secondary" id="decalibrate" type="button" onclick="decalibration()" style="margin: 5px;">
+                    Сброс калибровки
             </button>
-            <ul class="dropdown-menu dropdown-menu-end">
-                <li class="dropdown-header"><h4 class="mainText">{{ name }}</h4>
-                    Настройки пользователя
-                </li>
-                <li><a class="dropdown-item" href="/logout">Выйти</a></li>
-                <!--li class="divider"></li>
-                <li class="dropdown-header">Уроки</li-->
-            </ul>
+            <div class="dropdown" style="margin-right:15px">
+                <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown"
+                        aria-expanded="false">
+                    <img src="/static/img/user_images/0.png" align="right" alt="" style="width: 40px; height: 40px;"
+                         class="round">
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li class="dropdown-header"><h4 class="mainText">{{ name }}</h4>
+                        Настройки пользователя
+                    </li>
+                    <li><a class="dropdown-item" href="/logout">Выйти</a></li>
+                    <!--li class="divider"></li>
+                    <li class="dropdown-header">Уроки</li-->
+                </ul>
+            </div>
         </div>
     {% elif id!=-247 %}
         <a></a>

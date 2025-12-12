@@ -1,5 +1,4 @@
 <div>
-    <!--h4>Калибровки</h4-->
     <div class="mb-3 d-flex justify-content-between">
         <button class="btn btn-primary" id="HH" onclick="calibration('HH', window.client)" type="button" style="margin: 5px;">
                 <span class="spinner-grow spinner-grow-sm" role="status" aria-hidden="true" id="loader-HH"
@@ -12,14 +11,21 @@
             КЗ
         </button>
         <button class="btn btn-primary" id="Match" type="button" onclick="calibration('Match', window.client)" style="margin: 5px;">
-                <span class="spinner-grow spinner-grow-sm" role="status" aria-hidden="true" id="loader-Match"
-                      style="display: none;"></span>
-            Нагрузка
+                    <span class="spinner-grow spinner-grow-sm" role="status" aria-hidden="true" id="loader-Match"
+                          style="display: none;"></span>
+                Нагрузка
         </button>
-        <button class="btn btn-primary" id="Bolt" type="button" onclick="calibration('Bolt', window.client)" style="margin: 5px;">
-                <span class="spinner-grow spinner-grow-sm" role="status" aria-hidden="true" id="loader-Bolt"
-                      style="display: none;"></span>
-            Болт
-        </button>
+        {% if dualPort %}
+            <button class="btn btn-primary" id="MatchDual" type="button" onclick="calibration('MatchDual', window.client)" style="margin: 5px;">
+                    <span class="spinner-grow spinner-grow-sm" role="status" aria-hidden="true" id="loader-MatchDual"
+                          style="display: none;"></span>
+                2 нагрузки
+            </button>
+            <button class="btn btn-primary" id="Bolt" type="button" onclick="calibration('Bolt', window.client)" style="margin: 5px;">
+                    <span class="spinner-grow spinner-grow-sm" role="status" aria-hidden="true" id="loader-Bolt"
+                          style="display: none;"></span>
+                Thru
+            </button>
+        {% endif %}
     </div>
 </div>

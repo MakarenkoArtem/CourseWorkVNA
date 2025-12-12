@@ -1,3 +1,4 @@
+from VNAWorker import UNCALIBRATED
 from driver.build.vnakit_py import RecordingSettings, FrequencyRange
 
 
@@ -21,7 +22,10 @@ def cpyData(source, obj, mapp):
             set_nested_attr(obj, target_key, value)
         except AttributeError as e:
             print(f"Error accessing attribute '{source_key}': {e}")
-
+CALIBRATED=0
+UNCORRECTED_CALIBRATION=3
+CALIBRATING=4
+UNCALIBRATED=5
 
 class SettingsModel:
     def __init__(self, author_id=-1):
@@ -34,10 +38,11 @@ class SettingsModel:
         self.output_power_dbm = -10
         self.txtr = 3
         self.mode = 0
-        self.calib_HH = 1
-        self.calib_KZ = 1
-        self.calib_Match = 1
-        self.calib_Bolt = 1
+        self.calib_HH = UNCALIBRATED
+        self.calib_KZ = UNCALIBRATED
+        self.calib_Match = UNCALIBRATED
+        self.calib_Bolt = UNCALIBRATED
+        self.calib_Match_Dual = UNCALIBRATED
 
     def fromDB(self, dbSettings):
         mapp = {'id': 'id', 'author_id': 'author_id', 'freq_start_mhz': 'freq_start_mhz',
