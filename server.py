@@ -25,7 +25,6 @@ def check_active_user(func):
       - activeSession пустой (устройство свободно), или
       - activeSession['user'] == current_user.id
     Иначе возвращает {"error": "..."} с кодом 403.
-    Использовать после @login_required.
     """
 
     @wraps(func)
@@ -52,7 +51,6 @@ def check_active_user(func):
             "message": "Устройство сейчас используется другим пользователем",
             "userId": session_user
         }), 403
-
     return wrapper
 
 

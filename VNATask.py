@@ -1,7 +1,7 @@
 from datetime import datetime
 
 
-class VNAEvent:
+class VNATask:
     def __init__(self, func, repeat=0, timeEnd=datetime.now(), priority=0, title=""):
         self.title=title
         self.repeat = repeat

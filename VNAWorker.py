@@ -1,9 +1,9 @@
 from datetime import datetime, timedelta
 from threading import Thread
 from time import sleep
-from VNAEvent import VNAEvent
+from VNATask import VNATask
 
-DEBUG = False
+DEBUG = True
 if DEBUG:
     print("ЗАПУЩЕН ЭМУЛЯТОР ВЕКТОРНИКА")
     from driver.build.vnakit_py import VNACalibration, RecordingSettings, VNAData, Smatrixs
@@ -23,21 +23,21 @@ DECALIBRATION = 7
 DEVICE_SETTINGS = 10
 
 
-def eventLoop(worker):
+def taskLoop(worker):
     while worker.isRunning:
-        worker.events.sort(reverse=True)
-        if worker.curEvent.inProcess():
-            if len(worker.events) and worker.events[0].priority > worker.curEvent.priority:
-                worker.events.append(worker.curEvent)
-                worker.curEvent = worker.events.pop(0)
-                print("Берем более приоритетную задачу:", worker.curEvent.title)
-                print("Задачи в очереди:", ", ".join([i.title for i in worker.events]))
-            worker.curEvent.func()
+        worker.tasks.sort(reverse=True)
+        if worker.curTask.inProcess():
+            if len(worker.tasks) and worker.tasks[0].priority > worker.curTask.priority:
+                worker.tasks.append(worker.curTask)
+                worker.curTask = worker.tasks.pop(0)
+                print("Берем более приоритетную задачу:", worker.curTask.title)
+                print("Задачи в очереди:", ", ".join([i.title for i in worker.tasks]))
+            worker.curTask.func()
         else:
-            if len(worker.events):
-                worker.curEvent = worker.events.pop(0)
-                print("Берем задачу:", worker.curEvent.title)
-                print("Задачи в очереди:", ", ".join([i.title for i in worker.events]))
+            if len(worker.tasks):
+                worker.curTask = worker.tasks.pop(0)
+                print("Берем задачу:", worker.curTask.title)
+                print("Задачи в очереди:", ", ".join([i.title for i in worker.tasks]))
             else:
                 sleep(0.5)
     worker.isRunning = 1
@@ -51,8 +51,8 @@ class VNAWorker:
         self.calibration = UNCALIBRATED
         self.DeviceVNA = None
         self.CalibrationVNA = VNACalibration()
-        self.events = []
-        self.curEvent = VNAEvent(int, priority=-1, title="Заглушка")
+        self.tasks = []
+        self.curTask = VNATask(int, priority=-1, title="Заглушка")
         self.MATCH, self.KZ, self.HH, self.BOLT, self.MATCH_DUAL = None, None, None, None, None
         self.settings = RecordingSettings()
 
@@ -69,8 +69,8 @@ class VNAWorker:
         self.settings = settings
 
     def setSettings(self, settings: RecordingSettings):
-        self.events.append(VNAEvent(lambda: self.__setSettingsTask(settings), priority=DEVICE_SETTINGS, repeat=1,
-                                    title="Установка настроек"))
+        self.tasks.append(VNATask(lambda: self.__setSettingsTask(settings), priority=DEVICE_SETTINGS, repeat=1,
+                                  title="Установка настроек"))
 
     def __getResultTask(self, DATA):
         measurData = self.DeviceVNA.get_result()
@@ -101,14 +101,14 @@ class VNAWorker:
 
     def getResult(self, DATA: Smatrixs, seconds=300):
         self.stopGettingMeasurment()
-        self.events.append(VNAEvent(lambda: self.__getResultTask(DATA), priority=GETTING_DATA,
-                                    timeEnd=datetime.now() + timedelta(seconds=seconds), title="Получение значений"))
+        self.tasks.append(VNATask(lambda: self.__getResultTask(DATA), priority=GETTING_DATA,
+                                  timeEnd=datetime.now() + timedelta(seconds=seconds), title="Получение значений"))
 
     def stopGettingMeasurment(self):
-        if self.curEvent is not None and self.curEvent.priority == GETTING_DATA:
-            self.curEvent.timeEnd = datetime.now()
-            self.curEvent.repeat = 0
-        self.events = [event for event in self.events if event.priority != GETTING_DATA]
+        if self.curTask is not None and self.curTask.priority == GETTING_DATA:
+            self.curTask.timeEnd = datetime.now()
+            self.curTask.repeat = 0
+        self.tasks = [task for task in self.tasks if task.priority != GETTING_DATA]
         return True
 
     def __getCalibrationTask(self, setData, setVal):
@@ -132,29 +132,29 @@ class VNAWorker:
         self.BOLT = data
 
     def takeHH(self, setVal):  # передаем в списке переменную которую поменять в результате
-        self.events.append(
-            VNAEvent(func=lambda: self.__getCalibrationTask(self.setHH, setVal), repeat=1,
-                     priority=MEASURE_FOR_CALIBRATION, title="Измерение ХХ"))
+        self.tasks.append(
+            VNATask(func=lambda: self.__getCalibrationTask(self.setHH, setVal), repeat=1,
+                    priority=MEASURE_FOR_CALIBRATION, title="Измерение ХХ"))
 
     def takeKZ(self, setVal):  # передаем в списке переменную которую поменять в результате
-        self.events.append(
-            VNAEvent(func=lambda: self.__getCalibrationTask(self.setKZ, setVal), repeat=1,
-                     priority=MEASURE_FOR_CALIBRATION, title="Измерение  КЗ"))
+        self.tasks.append(
+            VNATask(func=lambda: self.__getCalibrationTask(self.setKZ, setVal), repeat=1,
+                    priority=MEASURE_FOR_CALIBRATION, title="Измерение  КЗ"))
 
     def takeMatch(self, setVal):  # передаем в списке переменную которую поменять в результате
-        self.events.append(
-            VNAEvent(func=lambda: self.__getCalibrationTask(self.setMatch, setVal), repeat=1,
-                     priority=MEASURE_FOR_CALIBRATION, title="Измерение Нагрузка"))
+        self.tasks.append(
+            VNATask(func=lambda: self.__getCalibrationTask(self.setMatch, setVal), repeat=1,
+                    priority=MEASURE_FOR_CALIBRATION, title="Измерение Нагрузка"))
 
     def takeBolt(self, setVal):  # передаем в списке переменную которую поменять в результате
-        self.events.append(
-            VNAEvent(func=lambda: self.__getCalibrationTask(self.setBolt, setVal), repeat=1,
-                     priority=MEASURE_FOR_CALIBRATION, title="Измерение Болт"))
+        self.tasks.append(
+            VNATask(func=lambda: self.__getCalibrationTask(self.setBolt, setVal), repeat=1,
+                    priority=MEASURE_FOR_CALIBRATION, title="Измерение Болт"))
 
     def takeMatchDual(self, setVal):  # передаем в списке переменную которую поменять в результате
-        self.events.append(
-            VNAEvent(func=lambda: self.__getCalibrationTask(self.setMatchDual, setVal), repeat=1,
-                     priority=MEASURE_FOR_CALIBRATION, title="Измерение Нагрузка"))
+        self.tasks.append(
+            VNATask(func=lambda: self.__getCalibrationTask(self.setMatchDual, setVal), repeat=1,
+                    priority=MEASURE_FOR_CALIBRATION, title="Измерение Нагрузка"))
 
     def __onePortCalibration(self):
         if None in [self.HH, self.KZ, self.MATCH]:
@@ -176,8 +176,8 @@ class VNAWorker:
         self.calibration = ONE_PORT
 
     def onePortCalibration(self):
-        self.events.append(VNAEvent(func=lambda: self.__onePortCalibration(), repeat=1, priority=CALIBRATION,
-                                    title="Однопортовая калибровка"))
+        self.tasks.append(VNATask(func=lambda: self.__onePortCalibration(), repeat=1, priority=CALIBRATION,
+                                  title="Однопортовая калибровка"))
         return True
 
     def __dualPortCalibration(self):
@@ -197,22 +197,22 @@ class VNAWorker:
         self.calibration = DUAL_PORT
 
     def dualPortCalibration(self):
-        self.events.append(VNAEvent(func=lambda: self.__dualPortCalibration(), repeat=1, priority=CALIBRATION,
-                                    title="Двухпортовая калибровка"))
+        self.tasks.append(VNATask(func=lambda: self.__dualPortCalibration(), repeat=1, priority=CALIBRATION,
+                                  title="Двухпортовая калибровка"))
         return True
 
     def __decalibrateTask(self):
         self.calibration = UNCALIBRATED
         self.MATCH, self.KZ, self.HH, self.BOLT, self.MATCH_DUAL = None, None, None, None, None
-        self.events = [event for event in self.events if event.priority != CALIBRATION]
+        self.tasks = [task for task in self.tasks if task.priority != CALIBRATION]
 
     def decalibrate(self):
-        self.events.append(VNAEvent(func=lambda: self.__decalibrateTask(), repeat=1, priority=DECALIBRATION,
-                                    title="Декалибровка"))
+        self.tasks.append(VNATask(func=lambda: self.__decalibrateTask(), repeat=1, priority=DECALIBRATION,
+                                  title="Декалибровка"))
 
     def run(self):
         if self.thread is not None:
             self.isRunning = 0
             self.thread.join()
-        self.thread = Thread(target=eventLoop, args=(self,), daemon=True)
+        self.thread = Thread(target=taskLoop, args=(self,), daemon=True)
         self.thread.start()
