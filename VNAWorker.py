@@ -3,7 +3,7 @@ from threading import Thread
 from time import sleep
 from VNATask import VNATask
 
-DEBUG = True
+DEBUG = False
 if DEBUG:
     print("ЗАПУЩЕН ЭМУЛЯТОР ВЕКТОРНИКА")
     from driver.build.vnakit_py import VNACalibration, RecordingSettings, VNAData, Smatrixs
