@@ -51,6 +51,7 @@ def check_active_user(func):
             "message": "Устройство сейчас используется другим пользователем",
             "userId": session_user
         }), 403
+
     return wrapper
 
 
@@ -146,7 +147,7 @@ def settings():  # форма для регистрации
     if form.validate_on_submit():
         activeSession = {'user': current_user.id, 'time': datetime.now() + timedelta(minutes=form.delay.data)}
         SETTINGS.author_id = current_user.id
-        if SETTINGS.mode!= int(form.mode.data) or SETTINGS.txtr!= int(form.txtr.data):
+        if SETTINGS.mode != int(form.mode.data) or SETTINGS.txtr != int(form.txtr.data):
             VNA_WORKER.decalibrate()
             SETTINGS.decalibrated()
         SETTINGS.fromForm(form)
@@ -281,6 +282,14 @@ def calib_Bolt():
     VNA_WORKER.takeBolt(setBolt)
     VNA_WORKER.dualPortCalibration()
     return jsonify('In process')
+
+
+@app.get("/deactivate")
+@check_active_user
+def deactivate():
+    global activeSession
+    activeSession = {}
+    return jsonify({'data': 'OK'})
 
 
 @app.get("/decalibrate")

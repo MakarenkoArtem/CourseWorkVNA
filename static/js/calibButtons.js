@@ -8,6 +8,35 @@ const classNames = {
 [CALIBRATING]:'btn btn-warning',//'btn btn-info',
 [UNCALIBRATED]:'btn btn-danger'
 }
+
+function formatTime(time) {
+    const formattedMinutes = String(Math.floor(time / 60)).padStart(2, '0');
+    const formattedSeconds = String(time % 60).padStart(2, '0');
+    return `${formattedMinutes}:${formattedSeconds}`;
+}
+
+export function updateBar(time){
+    try{
+        let btn = document.getElementById("btn-settings")
+        if(time>-1){
+            document.getElementById("settingsIcon").src = "/static/img/control.png"
+            let text='Устройсво доступно';
+            if (time>0){
+                text=formatTime(time)
+            }
+            document.getElementById("calib_dropdown").disabled= time<=0;
+            document.getElementById("btn-settings-text").textContent = text;
+            btn.onclick = () => window.location.href = "/settings";
+        }else{
+            document.getElementById("settingsIcon").src = "/static/img/disconnect.png"
+            document.getElementById("btn-settings-text").textContent = 'Управление у другого пользователя'
+            btn.onclick = () => null;
+        }
+    }catch(error){
+        console.debug(error)
+    }
+}
+
 export function updateButtons(settings) {
     // Маппинг ID кнопок к соответствующим ключам в объекте settings
     const buttonsMap = {
@@ -59,5 +88,15 @@ export async function decalibration(client){
     }
 }
 
+export async function deactivate(client){
+    try {
+        const result = await client.getJSON(`/deactivate`)
+        console.log(`Response from /deactivate`, result);
+    } catch (error) {
+        console.error("Error sending request to:", error);
+    }
+}
+
 window.calibration = calibration;
 window.decalibration = decalibration;
+window.deactivate = deactivate;
