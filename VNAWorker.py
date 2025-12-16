@@ -1,11 +1,17 @@
 from datetime import datetime, timedelta
 from threading import Thread
 from time import sleep
+import argparse
 from VNATask import VNATask
 
-DEBUG = False
+parser = argparse.ArgumentParser()
+parser.add_argument("--debug", action="store_true", help="Enable debug mode")
+args = parser.parse_args()
+
+DEBUG = args.debug
+
 if DEBUG:
-    print("ЗАПУЩЕН ЭМУЛЯТОР ВЕКТОРНИКА")
+    print("===========ЗАПУЩЕН ЭМУЛЯТОР ВЕКТОРНИКА===============")
     from driver.build.vnakit_py import VNACalibration, RecordingSettings, VNAData, Smatrixs
     from emulator import VNAKitDevice
 else:

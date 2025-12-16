@@ -146,6 +146,9 @@ def settings():  # форма для регистрации
     if form.validate_on_submit():
         activeSession = {'user': current_user.id, 'time': datetime.now() + timedelta(minutes=form.delay.data)}
         SETTINGS.author_id = current_user.id
+        if SETTINGS.mode!= int(form.mode.data) or SETTINGS.txtr!= int(form.txtr.data):
+            VNA_WORKER.decalibrate()
+            SETTINGS.decalibrated()
         SETTINGS.fromForm(form)
         updateSettingsDb(SETTINGS)
         VNA_WORKER.setSettings(SETTINGS.toRecordingSettings())

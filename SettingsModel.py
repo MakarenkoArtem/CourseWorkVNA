@@ -47,6 +47,13 @@ class SettingsModel:
         self.calib_Bolt = UNCALIBRATED
         self.calib_Match_Dual = UNCALIBRATED
 
+    def decalibrated(self):
+        self.calib_HH = UNCALIBRATED
+        self.calib_KZ = UNCALIBRATED
+        self.calib_Match = UNCALIBRATED
+        self.calib_Bolt = UNCALIBRATED
+        self.calib_Match_Dual = UNCALIBRATED
+
     def fromDB(self, dbSettings):
         mapp = {'id': 'id', 'author_id': 'author_id', 'freq_start_mhz': 'freq_start_mhz',
                 'freq_stop_mhz': 'freq_stop_mhz', 'num_freq_points': 'num_freq_points', 'rbw_khz': 'rbw_khz',

@@ -15,8 +15,12 @@
         status.full_measurement_data_got = true;
     }
 
-    void VNACalibration::loadPortOneCalibrationStandartData(const VNAData& Open, const VNAData& Short, const VNAData& Match)
+    int VNACalibration::loadPortOneCalibrationStandartData(const VNAData& Open, const VNAData& Short, const VNAData& Match)
     {
+        if (Open.frequency.size() != Short.frequency.size() || Open.frequency.size() != Match.frequency.size()) {
+            std::cerr << "Не сответствует размер массивов частот(loadPortOneCalibrationStandartData)" << std::endl;
+            return ERROR;
+        }
         OpenRaw.frequency = Open.frequency; OpenRaw.a0 = Open.a0; OpenRaw.b0_3 = Open.b0_3; OpenRaw.b3_3 = Open.b3_3;
         ShortRaw.frequency = Short.frequency; ShortRaw.a0 = Short.a0; ShortRaw.b0_3 = Short.b0_3; ShortRaw.b3_3 = Short.b3_3;
         MatchRaw.frequency = Match.frequency; MatchRaw.a0 = Match.a0; MatchRaw.b0_3 = Match.b0_3; MatchRaw.b3_3 = Match.b3_3;
@@ -26,7 +30,7 @@
         matchStandartp1 = OSMstandart();
         
         int Nstd = OpenRaw.frequency.size();
-        //по нормальному проверку на одинаковость файлов по длине, но нее
+        FrequenciesOfStandart.resize(Nstd);
         for (int i = 0; i < Nstd; i++)
         {
             openStandartp1.frequency.push_back(OpenRaw.frequency[i]);
@@ -37,17 +41,17 @@
             shortStandartp1.S.push_back(ShortRaw.b0_3[i] / ShortRaw.a0[i]);
             matchStandartp1.S.push_back(MatchRaw.b0_3[i] / MatchRaw.a0[i]);
 
-            FrequenciesOfStandart.push_back(OpenRaw.frequency[i]);
+            FrequenciesOfStandart[i]=OpenRaw.frequency[i];
         }
-
         status.firstP_standart_data_got = true;
+        return 0;
     }
 
-    void VNACalibration::loadPortTwoCalibrationStandartData(const VNAData& Open, const VNAData& Short, const VNAData& Match) {
+    int VNACalibration::loadPortTwoCalibrationStandartData(const VNAData& Open, const VNAData& Short, const VNAData& Match) {
 
         if (Open.frequency.size() != Short.frequency.size() || Open.frequency.size() != Match.frequency.size()) {
-            std::cerr << "нессответствует размер массивов" << std::endl;
-            return;
+            std::cerr << "Не сответствует размер массивов частот(loadPortTwoCalibrationStandartData)" << std::endl;
+            return ERROR;
         }
     
         VNAData OpenRaw6, ShortRaw6, MatchRaw6;
@@ -67,8 +71,9 @@
         shortStandartp2 = OSMstandart{};
         matchStandartp2 = OSMstandart{};
     
-        size_t Nstd = Open.frequency.size();
-        for (size_t i = 0; i < Nstd; ++i) {
+        size_t Nstd = OpenRaw6.frequency.size();
+        FrequenciesOfStandart.resize(Nstd);
+        for (size_t i = 0; i < Nstd; i++){
             openStandartp2.frequency.push_back(OpenRaw6.frequency[i]);
             shortStandartp2.frequency.push_back(ShortRaw6.frequency[i]);
             matchStandartp2.frequency.push_back(MatchRaw6.frequency[i]);
@@ -77,11 +82,10 @@
             shortStandartp2.S.push_back(ShortRaw6.b3_6[i] / ShortRaw6.a3[i]);
             matchStandartp2.S.push_back(MatchRaw6.b3_6[i] / MatchRaw6.a3[i]);
         
-            if (FrequenciesOfStandart.empty()) {
-                FrequenciesOfStandart.push_back(OpenRaw6.frequency[i]);
-            }
+            FrequenciesOfStandart[i]=OpenRaw6.frequency[i];
         }
         status.secondP_standart_data_got = true;
+        return 0;
     }
 
     void VNACalibration::loadThruStandartData(const VNAData& thruData) {
@@ -621,7 +625,6 @@
             secondPortE[i].ef11 = (1.0 / znam) * ((g2 - g1)*m3 - (g3 - g1) * m2 + (g3 - g2) * m1);
             secondPortE[i].detEf = (1.0 / znam) * (-((g3 -g2)*m2 + (g1 - g3) * m1) * m3 - (g2 - g1) * m1 * m2);
         }
-
         status.port_two_errors_calculated = true;
     }
 
@@ -738,12 +741,12 @@
     void VNACalibration::ApplyPortOneErr()
     {
         calibratedS.frequency.resize(N);
-        calibratedS.S11.clear();
+        calibratedS.S11.resize(N);
         for (int i = 0; i < N; i++)
         {
             calibratedS.frequency[i]=rawData.frequency[i];
             complex<double> Gm = uncalibratedS.S11[i];
-            calibratedS.S11.push_back((Gm - firstPortE[i].ef00) / (Gm * firstPortE[i].ef11 - firstPortE[i].detEf));
+            calibratedS.S11[i]=(Gm - firstPortE[i].ef00) / (Gm * firstPortE[i].ef11 - firstPortE[i].detEf);
         }
 
         status.S11_calibrated = true;
@@ -752,12 +755,12 @@
     void VNACalibration::ApplyPortTwoErr()
     {
         calibratedS.frequency.resize(N);
-        calibratedS.S22.clear();
+        calibratedS.S22.resize(N);
         for (int i = 0; i < N; i++)
         {
             calibratedS.frequency[i]=rawData.frequency[i];
             complex<double> Gm = uncalibratedS.S22[i];
-            calibratedS.S22.push_back((Gm - secondPortE[i].ef00) / (Gm * secondPortE[i].ef11 - secondPortE[i].detEf));
+            calibratedS.S22[i]= (Gm - secondPortE[i].ef00) / (Gm * secondPortE[i].ef11 - secondPortE[i].detEf);
         }
 
         status.S22_calibrated = true;
