@@ -27,6 +27,8 @@ using std::setw;
 using std::fixed;
 using std::setprecision;
 using std::exception;
+
+#define ERROR -1
 /*
 struct VNAData {
     std::vector<double> frequency;
@@ -140,9 +142,9 @@ public:
     // Загрузка измеренных данных и данный стандартов
     void loadMeasurementData(const VNAData& data);
 
-    void loadPortOneCalibrationStandartData(const VNAData& Open, const VNAData& Short, const VNAData& Match);
+    int loadPortOneCalibrationStandartData(const VNAData& Open, const VNAData& Short, const VNAData& Match);
 
-    void loadPortTwoCalibrationStandartData(const VNAData& Open, const VNAData& Short, const VNAData& Match);
+    int loadPortTwoCalibrationStandartData(const VNAData& Open, const VNAData& Short, const VNAData& Match);
 
     void loadThruStandartData(const VNAData& thruData);
 
