@@ -81,23 +81,20 @@ class VNAWorker:
     def __getResultTask(self, DATA):
         measurData = self.DeviceVNA.get_result()
         sMatr = Smatrixs()
-        # TODO проверить калибровки
         self.CalibrationVNA.load_measurement_data(measurData)
         self.CalibrationVNA.calculate_uncalibrated_s()
         if self.calibration == UNCALIBRATED:
             self.CalibrationVNA.get_uncalibrated_s(measurData, sMatr)
         elif self.calibration == ONE_PORT:
-            # TODO проверить калибровки
             if self.settings.txtr == 3:
                 self.CalibrationVNA.apply_port_one_err()
             else:
                 self.CalibrationVNA.apply_port_two_err()
-            self.CalibrationVNA.write_calibrated_s("onePort.csv")
+            #self.CalibrationVNA.write_calibrated_s("onePort.csv")
             sMatr = self.CalibrationVNA.get_calibrated_s()
         elif self.calibration == DUAL_PORT:
-            # TODO проверить калибровки
             self.CalibrationVNA.apply_12term_errors()
-            self.CalibrationVNA.write_calibrated_s("dualPort.csv")
+            #self.CalibrationVNA.write_calibrated_s("dualPort.csv")
             sMatr = self.CalibrationVNA.get_calibrated_s()
         DATA.frequency = sMatr.frequency
         DATA.S11 = list(map(abs, sMatr.S11))
@@ -166,7 +163,6 @@ class VNAWorker:
         if None in [self.HH, self.KZ, self.MATCH]:
             return
         self.CalibrationVNA.load_measurement_data(self.DeviceVNA.get_result())
-        # TODO проверить калибровки
         if self.settings.txtr == 3:
             self.CalibrationVNA.load_port_one_calibration_standart_data(Open=self.HH, Short=self.KZ, Match=self.MATCH)
             self.CalibrationVNA.calculate_uncalibrated_s()
@@ -182,8 +178,9 @@ class VNAWorker:
         self.calibration = ONE_PORT
 
     def onePortCalibration(self):
-        self.tasks.append(VNATask(func=lambda: self.__onePortCalibration(), repeat=1, priority=CALIBRATION,
-                                  title="Однопортовая калибровка"))
+        if "Однопортовая калибровка" not in [task.title for task in self.tasks]:
+            self.tasks.append(VNATask(func=lambda: self.__onePortCalibration(), repeat=1, priority=CALIBRATION,
+                                      title="Однопортовая калибровка"))
         return True
 
     def __dualPortCalibration(self):
@@ -203,7 +200,8 @@ class VNAWorker:
         self.calibration = DUAL_PORT
 
     def dualPortCalibration(self):
-        self.tasks.append(VNATask(func=lambda: self.__dualPortCalibration(), repeat=1, priority=CALIBRATION,
+        if "Двухпортовая калибровка" not in [task.title for task in self.tasks]:
+            self.tasks.append(VNATask(func=lambda: self.__dualPortCalibration(), repeat=1, priority=CALIBRATION,
                                   title="Двухпортовая калибровка"))
         return True
 
