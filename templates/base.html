@@ -12,9 +12,9 @@
     <script src="/lib/react-dom.development.js"></script>
     <script src="/lib/babel.min.js"></script>
     <link href="/lib/bootstrap-5.3.8/css/bootstrap.min.css" rel="stylesheet">
-          <!--integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB"-->
+    <!--integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB"-->
     <script src="/lib/bootstrap-5.3.8/js/bootstrap.bundle.min.js"></script>
-            <!--integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"></script-->
+    <!--integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"></script-->
     <script src="/lib/plotly-3.3.0.min.js"></script>
     <script src="/lib/jquery-3.3.1.slim.min.js"></script>
     <script src="/lib/bootstrap-5.3.8/js/bootstrap.min.js"></script>
@@ -26,49 +26,50 @@
 <nav class="navbar navbar-dark bg-primary"
      style="display: flex;justify-content: space-between; align-items: center; padding: 10px 15px; min-height: 75px">
     {% if id!=null and id > 0 %}
-            <div class="btn-group">
-                <button id="btn-settings" style="margin-left:15px" class="btn btn-primary" onclick="location.href='/settings'">
-                    <img id="settingsIcon" src="/static/img/control.png" alt="Settings"
-                         style="width: 40px; height: 40px; margin-right: 5px;">
-                    <span id="btn-settings-text">{{time}}</span>
-                </button>
-              <button id="calib_dropdown" type="button" class="btn btn-primary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true" disabled>
-              </button>
-              <div class="dropdown-menu dropdown-menu-end">
-                <a class="dropdown-item" onclick="deactivate(window.client)">Отпустить устройство</a>
-                <a class="dropdown-item" onclick="decalibration(window.client)">Сброс калибровки</a>
-              </div>
-            </div>
-        {% block calibration %}
-        {% endblock %}
-        <div style="display: flex;">
-            <!--button class="btn btn-secondary" id="decalibrate" type="button" onclick="decalibration(window.client)" style="margin: 5px;">
-                    Сброс калибровки
-            </button-->
-            <div class="dropdown" style="margin-right:15px">
-                <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown"
-                        aria-expanded="false">
-                    <img src="/static/img/user_images/0.png" align="right" alt="" style="width: 40px; height: 40px;"
-                         class="round">
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end">
-                    <li class="dropdown-header"><h4 class="mainText">{{ name }}</h4>
-                        Настройки пользователя
-                    </li>
-                    <li><a class="dropdown-item" href="/logout">Выйти</a></li>
-                    <!--li class="divider"></li>
-                    <li class="dropdown-header">Уроки</li-->
-                </ul>
-            </div>
+    <div class="btn-group">
+        <button id="btn-settings" style="margin-left:15px" class="btn btn-primary" onclick="location.href='/settings'">
+            <img id="settingsIcon" src="/static/img/control.png" alt="Settings"
+                 style="width: 40px; height: 40px; margin-right: 5px;">
+            <span id="btn-settings-text">{{time}}</span>
+        </button>
+        <button id="calib_dropdown" type="button" class="btn btn-primary dropdown-toggle dropdown-toggle-split"
+                data-toggle="dropdown" aria-haspopup="true" aria-expanded="true" disabled>
+        </button>
+        <div class="dropdown-menu dropdown-menu-end">
+            <a class="dropdown-item" onclick="deactivate(window.client)">Отпустить устройство</a>
+            <a class="dropdown-item" onclick="decalibration(window.client)">Сброс калибровки</a>
         </div>
-    {% elif id!=-247 %}
-        <a></a>
-        <a align="right" href="/">
-            <button align="right" class="btn btn-primary" type="button"
+    </div>
+    {% block calibration %}
+    {% endblock %}
+    <div class="d-flex justify-content-end" style="display: flex;">
+        <!--button class="btn btn-secondary" id="decalibrate" type="button" onclick="decalibration(window.client)" style="margin: 5px;">
+                Сброс калибровки
+        </button-->
+        <div class="dropdown ms-auto" style="margin-right:15px">
+            <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown"
                     aria-expanded="false">
-                <img src="/static/img/login.png" align="right" alt="" style="width: 40px; height: 40px;" class="round">
+                <img src="/static/img/user_images/0.png" align="right" alt="" style="width: 40px; height: 40px;"
+                     class="round">
             </button>
-        </a>
+            <ul class="dropdown-menu dropdown-menu-end">
+                <li class="dropdown-header"><h4 class="mainText">{{ name }}</h4>
+                    Настройки пользователя
+                </li>
+                <li><a class="dropdown-item" href="/logout">Выйти</a></li>
+                <!--li class="divider"></li>
+                <li class="dropdown-header">Уроки</li-->
+            </ul>
+        </div>
+    </div>
+    {% elif id!=-247 %}
+    <a></a>
+    <a align="right" href="/">
+        <button align="right" class="btn btn-primary" type="button"
+                aria-expanded="false">
+            <img src="/static/img/login.png" align="right" alt="" style="width: 40px; height: 40px;" class="round">
+        </button>
+    </a>
     {% endif %}
 </nav>
 {% block content %}

@@ -1,7 +1,8 @@
+import argparse
 from datetime import datetime, timedelta
 from threading import Thread
 from time import sleep
-import argparse
+
 from VNATask import VNATask
 
 parser = argparse.ArgumentParser()
@@ -27,6 +28,17 @@ CALIBRATION = 5
 MEASURE_FOR_CALIBRATION = 6
 DECALIBRATION = 7
 DEVICE_SETTINGS = 10
+
+
+def catch_errors(func):
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except Exception as e:
+            print(f"[ERROR] {func.__name__}: {e}")
+            return None
+
+    return wrapper
 
 
 def taskLoop(worker):
@@ -62,12 +74,14 @@ class VNAWorker:
         self.MATCH, self.KZ, self.HH, self.BOLT, self.MATCH_DUAL = None, None, None, None, None
         self.settings = RecordingSettings()
 
+    @catch_errors
     def init(self, settings: RecordingSettings):
         self.settings = settings
         self.DeviceVNA = VNAKitDevice(config_path="driver/vnakit.conf")
         self.DeviceVNA.init()
         self.setSettings(settings)
 
+    @catch_errors
     def __setSettingsTask(self, settings: RecordingSettings):
         self.DeviceVNA.set_settings(settings)
         self.DeviceVNA.apply_settings()
@@ -78,6 +92,7 @@ class VNAWorker:
         self.tasks.append(VNATask(lambda: self.__setSettingsTask(settings), priority=DEVICE_SETTINGS, repeat=1,
                                   title="Установка настроек"))
 
+    @catch_errors
     def __getResultTask(self, DATA):
         measurData = self.DeviceVNA.get_result()
         sMatr = Smatrixs()
@@ -90,11 +105,11 @@ class VNAWorker:
                 self.CalibrationVNA.apply_port_one_err()
             else:
                 self.CalibrationVNA.apply_port_two_err()
-            #self.CalibrationVNA.write_calibrated_s("onePort.csv")
+            # self.CalibrationVNA.write_calibrated_s("onePort.csv")
             sMatr = self.CalibrationVNA.get_calibrated_s()
         elif self.calibration == DUAL_PORT:
             self.CalibrationVNA.apply_12term_errors()
-            #self.CalibrationVNA.write_calibrated_s("dualPort.csv")
+            # self.CalibrationVNA.write_calibrated_s("dualPort.csv")
             sMatr = self.CalibrationVNA.get_calibrated_s()
         DATA.frequency = sMatr.frequency
         DATA.S11 = list(map(abs, sMatr.S11))
@@ -114,6 +129,7 @@ class VNAWorker:
         self.tasks = [task for task in self.tasks if task.priority != GETTING_DATA]
         return True
 
+    @catch_errors
     def __getCalibrationTask(self, setData, setVal):
         setData(self.DeviceVNA.get_result())
         setVal(OK)
@@ -159,6 +175,7 @@ class VNAWorker:
             VNATask(func=lambda: self.__getCalibrationTask(self.setMatchDual, setVal), repeat=1,
                     priority=MEASURE_FOR_CALIBRATION, title="Измерение Нагрузка"))
 
+    @catch_errors
     def __onePortCalibration(self):
         if None in [self.HH, self.KZ, self.MATCH]:
             return
@@ -183,6 +200,7 @@ class VNAWorker:
                                       title="Однопортовая калибровка"))
         return True
 
+    @catch_errors
     def __dualPortCalibration(self):
         if None in [self.HH, self.KZ, self.BOLT, self.MATCH]:
             return
@@ -194,7 +212,6 @@ class VNAWorker:
             self.CalibrationVNA.load_two_match_standart_data(self.MATCH_DUAL)
         self.CalibrationVNA.calculate_uncalibrated_s()
         self.CalibrationVNA.interpolate_standarts()
-        # TODO проверить калибровки
         self.CalibrationVNA.calc_12term_err()
         self.CalibrationVNA.apply_12term_errors()
         self.calibration = DUAL_PORT
@@ -202,9 +219,10 @@ class VNAWorker:
     def dualPortCalibration(self):
         if "Двухпортовая калибровка" not in [task.title for task in self.tasks]:
             self.tasks.append(VNATask(func=lambda: self.__dualPortCalibration(), repeat=1, priority=CALIBRATION,
-                                  title="Двухпортовая калибровка"))
+                                      title="Двухпортовая калибровка"))
         return True
 
+    @catch_errors
     def __decalibrateTask(self):
         self.calibration = UNCALIBRATED
         self.MATCH, self.KZ, self.HH, self.BOLT, self.MATCH_DUAL = None, None, None, None, None
