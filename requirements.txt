@@ -1,0 +1,10 @@
+flask
+sqlalchemy
+flask_wtf
+flask_restful
+flask_login
+sqlalchemy_serializer
+wtforms==2.3.3
+numpy
+requests
+flask_cors

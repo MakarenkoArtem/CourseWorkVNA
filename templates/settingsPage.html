@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    form {
+      max-width: 480px;
+      margin: 40px auto;
+      font-family: system-ui, sans-serif;
+    }
+    .error {
+      font-size: 0.85rem;
+      color: #b00020;
+    }
+</style>
+<form action="" method="post" enctype="multipart/form-data">
+    <h2 class="mb-3 text-center">Настройки ВАЦ</h2>
+    {{ form.hidden_tag() }}
+    <p style="margin-bottom: 0px;">
+        {{ form.freq_start_mhz.label(style="margin-bottom: 5px;") }}<br>
+        {{ form.freq_start_mhz(class="form-control", type="number") }}<br>
+        {% for error in form.freq_start_mhz.errors %}
+    <p class="alert alert-danger" role="alert">{{ error }}</p>
+    {% endfor %}
+    </p>
+    <p style="margin-bottom: 0px;">
+        {{ form.freq_stop_mhz.label(style="margin-bottom: 5px;") }}<br>
+        {{ form.freq_stop_mhz(class="form-control", type="number") }}<br>
+        {% for error in form.freq_stop_mhz.errors %}
+    <p class="alert alert-danger" role="alert">{{ error }}</p>
+    {% endfor %}
+    </p>
+    <p style="margin-bottom: 0px;">
+        {{ form.num_freq_points.label(style="margin-bottom: 5px;") }}<br>
+        {{ form.num_freq_points(class="form-control", type="number") }}<br>
+        {% for error in form.num_freq_points.errors %}
+    <p class="alert alert-danger" role="alert">{{ error }}</p>
+    {% endfor %}
+    </p>
+    <p style="margin-bottom: 0px;">
+        {{ form.rbw_khz.label(style="margin-bottom: 5px;") }}<br>
+        {{ form.rbw_khz(class="form-control", type="number") }}<br>
+        {% for error in form.rbw_khz.errors %}
+    <p class="alert alert-danger" role="alert">{{ error }}</p>
+    {% endfor %}
+    </p>
+    <p style="margin-bottom: 0px;">
+        {{ form.output_power_dbm.label(style="margin-bottom: 5px;") }}<br>
+        {{ form.output_power_dbm(class="form-control", type="double") }}<br>
+        {% for error in form.output_power_dbm.errors %}
+    <p class="alert alert-danger" role="alert">{{ error }}</p>
+    {% endfor %}
+    </p>
+    <p style="margin-bottom: 0px;">
+        {{ form.txtr.label(style="margin-bottom: 5px;") }}<br>
+        {{ form.txtr(class="form-control") }}<br>
+        {% for error in form.txtr.errors %}
+    <p class="alert alert-danger" role="alert">{{ error }}</p>
+    {% endfor %}
+    </p>
+    <p style="margin-bottom: 0px;">
+        {{ form.mode.label(style="margin-bottom: 5px;") }}<br>
+        {{ form.mode(class="form-control") }}<br>
+        {% for error in form.mode.errors %}
+    <p class="alert alert-danger" role="alert">{{ error }}</p>
+    {% endfor %}
+
+    {% for error in form.delay.errors %}
+    <p class="alert alert-danger" role="alert">{{ error }}</p>
+    {% endfor %}
+    </p>
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <a href="/main" class="btn btn-danger">Назад</a>
+        <div style="width: auto;display: flex; align-items: center">
+
+        <label style="margin-right: 5px;">{{ form.delay.label.text }} </label>
+
+        <div class="input-group" style="width: auto;display: flex; align-items: center">
+            {{ form.delay(class="form-control", type="number",
+                          style="width: 80px !important; flex: 0 0 80px !important;") }}
+            {{ form.measure(class="btn btn-primary") }}
+        </div>
+        </div>
+    </div>
+
+</form>
+<script type="module" src="/static/js/settingsPage/main.js" defer></script>
+{% endblock %}
+
+{% block calibration %}
+{% include 'calibration.html' %}
+{% endblock %}
